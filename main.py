@@ -5,6 +5,7 @@ import mido
 from midiutil import MIDIFile
 from markov_chain_model import generate_markov_chain
 from midiplayer import *
+from music21 import *
 
 def getTextFromMidi(file):
     mid = mido.MidiFile(file)
@@ -26,6 +27,7 @@ class Composition():
         self.rawData = music_file
 
     def writeMIDI(self, filename):
+        #TODO deprecated; use music21 for this now, and ditch the old music format
         # Will write midi file according to raw data:
         track = 0   # only 1 track anyway
         MyMIDI = MIDIFile(1, eventtime_is_ticks=False)    # 4 voices/channels, but just 1 track
@@ -50,36 +52,49 @@ def load_music_txt(filename = "sample/F.txt"):
     F = np.loadtxt(filename)
     return F
 
-def load_music_midi(file):
-    # Reads midi file, outputs a rawdata format of music (like F.txt)
-    #TODO WIP
-    mid = mido.MidiFile(file)
-    # Summary of midi file
-    print(mid)
+def load_txt_to_stream(fp = "sample/F.txt"):
+    # Read from text file into a music21 stream/part
+    music = stream.Part()
+    # Create a duration object for all notes:
+    sixteenth_duration = duration.Duration("16th")
+    F = np.loadtxt(fp)
+    for sixteenth_idx, notes in enumerate(F):
+        for channel_idx, thisnote in enumerate(notes):
+            if thisnote != 0:
+                newnote = note.Note(thisnote)
+                newnote.duration = sixteenth_duration
+            else:
+                newnote = note.Rest()
+                newnote.duration = sixteenth_duration
 
-    # Find out how many channels there are
-    channels = [False for i in range(16)]
-    print("Loading file: {}...".format(file))
-    for msg in mid.play():
-        print(msg)
-        if not channels[msg.channel]:
-            channels[msg.channel] = True
+            music.insert(sixteenth_duration.quarterLength * sixteenth_idx, newnote)
         
-    
-    print(channels)
-    print(np.sum(channels))
+    print("Converting {} poorly formulated notes worth of data to midi; may take a while...".format(len(music)))
+    music.show('midi')
+
+    return music
+
+def writeMusic(musicstream: stream.Stream, fp: str):
+    mf = midi.translate.streamToMidiFile(musicstream)
+    mf.open(fp, "wb")
+    mf.write()
+    mf.close()
 
 
 def main():
     # First off: some configuration:
     m_F = "sample/F.txt"
     m_output = "output/BachFromTheDead.mid"
+    # I recommend musescore, but any midi program 
+    # # listed on music21's documentation is fine:
+    environment.set('midiPath', '/usr/bin/musescore')
+
 
     # Load the training data
+    music_stream = load_txt_to_stream()
+    writeAndPlay(music_stream, "examplestream.mid")
     music_file = load_music_txt()
-
-    # TODO: Transform the data into something useful for the ML algorithm
-
+   
     # Generate the markov chains, one for each
     mc = generate_markov_chain(music_file)
 
@@ -89,22 +104,6 @@ def main():
     # Transform the composition to Midi and write it to a file
     C = Composition(generated_music)
     C.writeMIDI(m_output)
-
-    #TODO: WIP function; not yet functional
-    #load_music_midi("BachFromTheDead.mid")
-
-
-    # Finally; play the generated music file
-    midi_filename = m_output
-    try:
-        # use the midi file you just saved
-        play_music(midi_filename)
-    except KeyboardInterrupt:
-        # if user hits Ctrl/C then exit
-        # (works only in console mode)
-        pygame.mixer.music.fadeout(1000)
-        pygame.mixer.music.stop()
-    raise SystemExit
 
 if __name__=="__main__":
     main()
