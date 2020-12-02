@@ -1,11 +1,7 @@
 import os
 import numpy as np
-import midi
-import mido
-from midiutil import MIDIFile
 from markov_chain_model import generate_markov_chain
-from midiplayer import *
-from music21 import *
+import music
 
 def getTextFromMidi(file):
     mid = mido.MidiFile(file)
@@ -47,63 +43,10 @@ class Composition():
     
 
 
-def load_music_txt(filename = "sample/F.txt"):
-    # Reads music from a txt file
-    F = np.loadtxt(filename)
-    return F
-
-def load_txt_to_stream(fp = "sample/F.txt"):
-    # Read from text file into a music21 stream/part
-    music = stream.Part()
-    # Create a duration object for all notes:
-    sixteenth_duration = duration.Duration("16th")
-    F = np.loadtxt(fp)
-    for sixteenth_idx, notes in enumerate(F):
-        for channel_idx, thisnote in enumerate(notes):
-            if thisnote != 0:
-                newnote = note.Note(thisnote)
-                newnote.duration = sixteenth_duration
-            else:
-                newnote = note.Rest()
-                newnote.duration = sixteenth_duration
-
-            music.insert(sixteenth_duration.quarterLength * sixteenth_idx, newnote)
-        
-    print("Converting {} poorly formulated notes worth of data to midi; may take a while...".format(len(music)))
-    music.show('midi')
-
-    return music
-
-def writeMusic(musicstream: stream.Stream, fp: str):
-    mf = midi.translate.streamToMidiFile(musicstream)
-    mf.open(fp, "wb")
-    mf.write()
-    mf.close()
 
 
 def main():
-    # First off: some configuration:
-    m_F = "sample/F.txt"
-    m_output = "output/BachFromTheDead.mid"
-    # I recommend musescore, but any midi program 
-    # # listed on music21's documentation is fine:
-    environment.set('midiPath', '/usr/bin/musescore')
-
-
-    # Load the training data
-    music_stream = load_txt_to_stream()
-    writeAndPlay(music_stream, "examplestream.mid")
-    music_file = load_music_txt()
-   
-    # Generate the markov chains, one for each
-    mc = generate_markov_chain(music_file)
-
-    # Generate the new music
-    generated_music = np.array([mc[idx].generate_states(music_file[0, idx], no=200) for idx in range(4)]).T
-    
-    # Transform the composition to Midi and write it to a file
-    C = Composition(generated_music)
-    C.writeMIDI(m_output)
+    music.to_vector_ts(music.read_midi())
 
 if __name__=="__main__":
     main()
