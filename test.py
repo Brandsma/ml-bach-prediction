@@ -2,10 +2,16 @@ from music21 import *
 import music
 
 streamscore = music.load_midi('sample/unfin.mid')
+
+streamscore.show('midi')
+codedsinglepart = music.to_vector_ts(streamscore)
+
 music.from_vector_ts(music.to_vector_ts(streamscore)).show('midi')
 
 
-
+# singlepart = streamscore[3]
+# singlepartscore = stream.Score()
+# singlepartscore.append(singlepart)
 
 # print(type(music.to_vector_ts(streamscore)))
 # print(music.pitch_decode(music.pitch_encode(pitch.Pitch('F5'))))

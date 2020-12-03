@@ -14,23 +14,23 @@ environment.set('midiPath', '/usr/bin/musescore')
  # 0 means no note is played (rest)
 # 0.5 to 1.0 are evenly spaced the notes:
 # C, G, D, A, E, B, F#/Gb, Db/C#, Ab, Eb, Bb, F
-cof = { 'C' : 0,
-        'G' : 1, 
-        'D' : 2,
-        'A' : 3,
-        'E' : 4,
-        'B' : 5,
-        'F#': 6,
-        'G-': 6,
-        'D-': 7,
-        'C#': 7,
-        'A-': 8,
-        'G#': 8,
-        'E-': 9,
-        'D#': 9,
-        'B-': 10,
-        'A#': 10,
-        'F' : 11}
+cof = { 'C' : 1,
+        'G' : 2, 
+        'D' : 3,
+        'A' : 4,
+        'E' : 5,
+        'B' : 6,
+        'F#': 7,
+        'G-': 7,
+        'D-': 8,
+        'C#': 8,
+        'A-': 9,
+        'G#': 9,
+        'E-': 10,
+        'D#': 10,
+        'B-': 11,
+        'A#': 11,
+        'F' : 12}
 # This corresponds to the circle of fifths, and should make noise less painful
 
 
@@ -79,7 +79,7 @@ def pitch_encode(pitch: pitch.Pitch):
     # Not all notes are represented in the cof, as there is a major and minor cof...
     # Correcting for this effect, at least for the initial dataset:
     
-    return 0.5 + (0.5 / 11) * cof[pitch.name]
+    return 0.5 + (0.5 / 12) * cof[pitch.name]
     
 
 def pitch_round(target_value: float, rest_cutoff: float = 0.25):
@@ -87,17 +87,18 @@ def pitch_round(target_value: float, rest_cutoff: float = 0.25):
         # This is in fact not a pitch but a rest
         target_value = 0.0
         return target_value
-    elif target_value < 0.5 - (0.5/11):
+    elif target_value < 0.5:
         target_value += 0.5
-    elif target_value > 1.0 + (0.5/11):
+    elif target_value > 1.0:
         target_value -= 0.5
 
-    return int((target_value - 0.5) / 0.5 * 11)
+    return int(round((target_value - 0.5) / 0.5 * 12, 0))
 
 def pitchval_decode(target_value: float, rest_cutoff: float = 0.25):
     # Does the opposite of pitch_encode: should output a pitch
-
-    rounded_value = pitch_round(target_value)
+    if target_value < rest_cutoff:
+        print("Non-fatal error: pitch decoded was actually a rest, not a note: {}".format(target_value))
+    rounded_value = pitch_round(target_value, rest_cutoff)
 
     # if target_value < rest_cutoff:
     #     # This is in fact not a pitch but a rest
@@ -109,6 +110,7 @@ def pitchval_decode(target_value: float, rest_cutoff: float = 0.25):
  
     # The above should implement the cyclic behavior of the cof
     # Round to the nearest proper note:
+
     for name, val in cof.items():
         if val == rounded_value:
             return pitch.Pitch(name)
@@ -167,7 +169,6 @@ def from_vector_ts(data: np.ndarray):
         for sixteenth_idx, val in enumerate(p):
             
             if (pitch_round(val) == tentative_note):
-                print("Continuous note, skipping...")
                 continue
             # If they are not the same; register a note and 
             # reset the search for the next note:
@@ -187,7 +188,7 @@ def from_vector_ts(data: np.ndarray):
     if (tentative_note == 0):
         score[part_idx].append(note.Rest(quarterLength = notelength * 0.25, offset = offset_idx))
     else:
-        score[part_idx].append(note.Note(pitch_decode(tentative_note), quarterLength = notelength * 0.25, offset = offset_idx))
+        score[part_idx].append(note.Note(pitchidx_decode(tentative_note), quarterLength = notelength * 0.25, offset = offset_idx))
 
 
     return score
