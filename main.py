@@ -1,10 +1,8 @@
 import os
 
-import mido
 import numpy as np
-from midiutil import MIDIFile
 
-import midi
+import music
 from algorithms.markov_chain_model import generate_markov_chain
 
 
@@ -28,6 +26,7 @@ class Composition:
         self.rawData = music_file
 
     def writeMIDI(self, filename):
+        # TODO deprecated; use music21 for this now, and ditch the old music format
         # Will write midi file according to raw data:
         track = 0  # only 1 track anyway
         MyMIDI = MIDIFile(
@@ -54,30 +53,8 @@ class Composition:
             MyMIDI.writeFile(output_file)
 
 
-def load_music():
-    F = np.loadtxt("sample/F.txt")
-    return F
-
-
 def main():
-    # Load the training data
-    music_file = load_music()
-
-    # TODO: Transform the data into something useful for the ML algorithm
-
-    # Generate the markov chains, one for each
-    mc = generate_markov_chain(music_file)
-
-    # Generate the new music
-    generated_music = np.array(
-        [mc[idx].generate_states(music_file[0, idx], no=200) for idx in range(4)]
-    ).T
-
-    # Transform the composition to Midi and write it to a file
-    C = Composition(generated_music)
-    C.writeMIDI("BachFromTheDead.mid")
-
-    getTextFromMidi("BachFromTheDead.mid")
+    pass
 
 
 if __name__ == "__main__":
