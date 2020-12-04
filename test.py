@@ -3,6 +3,8 @@ import music
 
 streamscore = music.load_midi('sample/unfin.mid')
 
+print(music.to_vector_ts(streamscore)[:100])
+
 streamscore.show('midi')
 codedsinglepart = music.to_vector_ts(streamscore)
 
