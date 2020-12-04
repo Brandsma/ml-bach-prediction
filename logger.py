@@ -21,7 +21,7 @@ FORMAT = "%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s"
 def set_colour_coded_levels():
     """ Set custom colours for the several debug levels. This is somewhat hacky """
     logging.addLevelName(
-        logging.DEBUG, "\033[1;30m%s\033[1;0m" % logging.getLevelName(logging.DEBUG)
+        logging.DEBUG, "\033[0;24m%s\033[1;0m" % logging.getLevelName(logging.DEBUG)
     )
     logging.addLevelName(
         logging.INFO, "\033[1;34m%s\033[1;0m" % logging.getLevelName(logging.INFO)

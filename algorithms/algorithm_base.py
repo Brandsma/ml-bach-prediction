@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 
 
-def PredictionModel(ABC):
+class PredictionModel(ABC):
     def __init__():
         pass
 

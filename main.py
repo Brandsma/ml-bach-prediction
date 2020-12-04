@@ -2,28 +2,38 @@ import os
 
 import numpy as np
 
+import logger
 import music
-from algorithms import ESN, MarkovChain
+from algorithms.markov_chain_model import MarkovChainList
 
 
 def main():
     # Define all the relevant algorithms here
-    # TODO: Fill the parameters for the constructor
-    algos = {"Markov" : MarkovChain(), 
-            "ESN": ESN()}
+    algorithm_list = {"Markov": MarkovChainList()}
 
     # Get the music input vector time series
     original_score = music.load_midi("sample/unfin.mid")
     score_vector_ts = music.to_vector_ts(original_score)
 
     # Loop over all algorithms
-    for algorithm in algorithm_list:
+    for algorithm_name in algorithm_list:
+        log.info("Currently fitting and predicting using %s", algorithm_name)
+        # Set the current algorithm
+        algorithm = algorithm_list[algorithm_name]
+
         # TODO: Fill in the relevant parameters
-        algorithm.fit()
+        algorithm.fit(score_vector_ts, score_vector_ts[1 : len(score_vector_ts)])
 
         # TODO: Visualize the results of each algorithm
-        algorithm.predict()
+        future_states = algorithm.predict(score_vector_ts)
+
+        # Show the resulting midi file
+        music.from_vector_ts(future_states).show("midi")
 
 
 if __name__ == "__main__":
+    log = logger.setup_logger(__name__)
+    log.info("Starting...")
+
+    # Run the main
     main()
