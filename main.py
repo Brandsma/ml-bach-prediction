@@ -9,9 +9,12 @@ from algorithms import ESN, MarkovChain
 def main():
     # Define all the relevant algorithms here
     # TODO: Fill the parameters for the constructor
-    algorithm_list = [MarkovChain(), ESN()]
+    algos = {"Markov" : MarkovChain(), 
+            "ESN": ESN()}
 
-    # TODO: Get the music input vector
+    # Get the music input vector time series
+    original_score = music.load_midi("sample/unfin.mid")
+    score_vector_ts = music.to_vector_ts(original_score)
 
     # Loop over all algorithms
     for algorithm in algorithm_list:

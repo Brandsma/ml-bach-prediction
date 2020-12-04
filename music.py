@@ -80,7 +80,6 @@ def load_midi(fp: str = "sample/unfin.mid"):
 
 
 def pitch_encode(pitch: pitch.Pitch):
-    # TODO: make this correct w.r.t. two different Circle of Fifths...
     # This function takes a pitch object and encodes it as follows:
     # 0 means no note is played (rest)
     # 0.5 to 1.0 are evenly spaced the notes:
@@ -91,7 +90,9 @@ def pitch_encode(pitch: pitch.Pitch):
     return 0.5 + (0.5 / 12) * cof[pitch.name]
 
 
-def pitch_round(target_value: float, rest_cutoff: float = 0.25):
+def pitch_round(target_value: float, rest_cutoff: float = 0.45):
+    # The following should implement the cyclic behavior of the cof
+
     if target_value < rest_cutoff:
         # This is in fact not a pitch but a rest
         target_value = 0.0
@@ -100,11 +101,12 @@ def pitch_round(target_value: float, rest_cutoff: float = 0.25):
         target_value += 0.5
     elif target_value > 1.0:
         target_value -= 0.5
+        
 
     return int(round((target_value - 0.5) / 0.5 * 12, 0))
 
 
-def pitchval_decode(target_value: float, rest_cutoff: float = 0.25):
+def pitchval_decode(target_value: float, rest_cutoff: float = 0.45):
     # Does the opposite of pitch_encode: should output a pitch
     if target_value < rest_cutoff:
         print(
@@ -114,15 +116,6 @@ def pitchval_decode(target_value: float, rest_cutoff: float = 0.25):
         )
     rounded_value = pitch_round(target_value, rest_cutoff)
 
-    # if target_value < rest_cutoff:
-    #     # This is in fact not a pitch but a rest
-    #     return None
-    # elif target_value < 0.5 - (0.5/11):
-    #     target_value += 0.5
-    # elif target_value > 1.0 + (0.5/11):
-    #     target_value -= 0.5
-
-    # The above should implement the cyclic behavior of the cof
     # Round to the nearest proper note:
 
     for name, val in cof.items():
