@@ -100,7 +100,7 @@ def pitch_round(target_value: float, rest_cutoff: float = 0.45):
     elif target_value < 0.5:
         target_value += 0.5
     elif target_value > 1.0:
-        target_value -= 0.5
+        target_value -=[ 0.5]
         
 
     return int(round((target_value - 0.5) / 0.5 * 12, 0))
@@ -159,6 +159,41 @@ def to_vector_ts(score: stream.Score, hasParts=True):
 
     return output_ts
 
+def to_vector_ts2(score: stream.Score, hasParts=True):
+    # Very similar to the first implementation, except this version will encode three values per voice;
+    # 1 for pitch type (A-G), 1 for octave number, 1 for whether a new note is played (shown by a pulse of 1 timestep).
+    # This gives higher dimensionality, but at least no information is lost...
+
+    # First we find the required length of the piece in sixteenth notes:
+    note_endings = [
+        note.offset + note.duration.quarterLength
+        for note in score.recurse().getElementsByClass("Note")
+    ]
+    score_duration = max(note_endings)
+    # Multiplied by 4, because we want it in 16th notes rather than quarter notes:
+    # And multiplied by three for each of the three pieces of information per voice
+    output_ts = np.zeros(
+        [int(score_duration * 4 + 1), 3 * len(score.getElementsByClass("Part"))]
+    )
+
+    # Then we loop over all voices:
+    for voice_idx, p in enumerate(score.getElementsByClass("Part")):
+        notes = list(p.recurse().getElementsByClass("Note"))
+        notes.sort(key=lambda n: n.offset)
+        for note in notes:
+            sixteenth_idx = int(note.offset * 4)
+            # Pulse to indicate a new note is played now
+            output_ts[sixteenth_idx, voice_idx * 3 + 2] = 1.0
+            while sixteenth_idx <= 4 * (note.offset + note.duration.quarterLength):
+                # First index belonging to this voice: pitch type
+                output_ts[sixteenth_idx, voice_idx * 3] = pitch_encode(note.pitch)
+                # Second index belonging to this voice: octave number (Seven octaves in a piano)
+                output_ts[sixteenth_idx, voice_idx + 1] = note.pitch.octave / 7.0 
+
+                sixteenth_idx += 1
+
+    return output_ts
+
 
 def from_vector_ts(data: np.ndarray):
     # This does the opposite of to_vector_ts:
@@ -196,6 +231,67 @@ def from_vector_ts(data: np.ndarray):
                 score[part_idx].append(
                     note.Note(
                         pitchidx_decode(tentative_note),
+                        quarterLength=notelength * 0.25,
+                        offset=offset_idx,
+                    )
+                )
+
+            # reset:
+            offset_idx = sixteenth_idx
+            tentative_note = pitch_round(val)
+
+    # After the for-loop, anything tentative is added anyway:
+    notelength = len(p) - offset_idx
+    if tentative_note == 0:
+        score[part_idx].append(
+            note.Rest(quarterLength=notelength * 0.25, offset=offset_idx)
+        )
+    else:
+        score[part_idx].append(
+            note.Note(
+                pitchidx_decode(tentative_note),
+                quarterLength=notelength * 0.25,
+                offset=offset_idx,
+            )
+        )
+
+    return score
+
+def from_vector_ts2(data: np.ndarray, new_note_cutoff: float = 0.5):
+    # Basically the same as from_vector_ts, except this also decodes the octave and new-note 
+    # it is assumed a new note is played when new-note-cutoff is > new_note_cutoff
+    # array values to midi
+
+    # For each part:
+    score = stream.Score()
+    num_parts = int(len(data.T) / 3)
+    print("number of parts: {}".format(num_parts))
+
+    for part_idx in range(num_parts):
+        p = data.T[part_idx * 3: part_idx * 3 + 2]
+        score.append(stream.Part())
+        # Go over all the 16th indices, and extract notes:
+        # When did a note start?
+        offset_idx = 0
+        tentative_note = 0  # assumed rest/no sound
+
+        for sixteenth_idx, val in enumerate(p[0]):
+
+            if pitch_round(val) == tentative_note & p[2][sixteenth_idx] < new_note_cutoff:
+                continue
+            # If they are not the same; register a note and
+            # reset the search for the next note:
+            notelength = sixteenth_idx - offset_idx
+            if tentative_note == 0:
+                score[part_idx].append(
+                    note.Rest(quarterLength=notelength * 0.25, offset=offset_idx)
+                )
+            else:
+                print()
+                score[part_idx].append(
+                    note.Note(
+                        pitchidx_decode(tentative_note),
+                        octave = int(p[1][sixteenth_idx] * 7),
                         quarterLength=notelength * 0.25,
                         offset=offset_idx,
                     )

@@ -1,14 +1,13 @@
 from music21 import *
 import music
+import numpy as np
 
 streamscore = music.load_midi('sample/unfin.mid')
 
-print(music.to_vector_ts(streamscore)[:100])
+#print(music.to_vector_ts2(streamscore)[:50])
 
 streamscore.show('midi')
-codedsinglepart = music.to_vector_ts(streamscore)
-
-music.from_vector_ts(music.to_vector_ts(streamscore)).show('midi')
+music.from_vector_ts2(music.to_vector_ts2(streamscore)).show('midi')
 
 
 # singlepart = streamscore[3]
