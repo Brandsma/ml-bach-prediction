@@ -45,14 +45,14 @@ class ESN(PredictionModel):
 
         print(np.shape(X))
 
-        self.model = PredictionESN(
-            n_input=1,
-            n_output=1,
-            n_reservoir=self.n_reservoir,
-            leakingRate=self.leaking_rate,
-            spectralRadius=self.spectral_radius,
-            regressionParameters=self.regression_parameters,
-        )
+        # self.model = PredictionESN(
+        #     n_input=1,
+        #     n_output=1,
+        #     n_reservoir=self.n_reservoir,
+        #     leakingRate=self.leaking_rate,
+        #     spectralRadius=self.spectral_radius,
+        #     regressionParameters=self.regression_parameters,
+        # )
 
     def predict(self, X):
         pass
