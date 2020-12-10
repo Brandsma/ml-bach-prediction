@@ -268,16 +268,15 @@ def from_vector_ts2(data: np.ndarray, new_note_cutoff: float = 0.5):
     print("number of parts: {}".format(num_parts))
 
     for part_idx in range(num_parts):
-        p = data.T[part_idx * 3: part_idx * 3 + 2]
+        p = data.T[part_idx * 3: part_idx * 3 + 3]
         score.append(stream.Part())
         # Go over all the 16th indices, and extract notes:
         # When did a note start?
         offset_idx = 0
         tentative_note = 0  # assumed rest/no sound
-
         for sixteenth_idx, val in enumerate(p[0]):
 
-            if pitch_round(val) == tentative_note & p[2][sixteenth_idx] < new_note_cutoff:
+            if (pitch_round(val) == tentative_note) & (p[2][sixteenth_idx] < new_note_cutoff):
                 continue
             # If they are not the same; register a note and
             # reset the search for the next note:
