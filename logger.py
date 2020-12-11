@@ -1,7 +1,8 @@
 """
 This module contains the logger functions
 
-Levels are used for identifying the severity of an event. There are six logging levels:
+Levels are used for identifying the severity of an event.
+There are six logging levels:
 
     CRITICAL
     ERROR
@@ -10,9 +11,12 @@ Levels are used for identifying the severity of an event. There are six logging 
     DEBUG
     NOTSET
 
-If the logging level is set to WARNING, all WARNING, ERROR, and CRITICAL messages are written to the log file or console. If it is set to ERROR, only ERROR and CRITICAL messages are logged.
+If the logging level is set to WARNING, all WARNING, ERROR, and CRITICAL
+messages are written to the log file or console.
+If it is set to ERROR, only ERROR and CRITICAL messages are logged.
 
 """
+
 import logging
 
 FORMAT = "%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s"
@@ -40,7 +44,7 @@ def set_colour_coded_levels():
 
 def setup_logger(name, level=logging.INFO):
     """
-    get logger returns a logger with specific formatting options
+    *setup_logger* returns a logger with specific formatting options
 
     name should almost always be __name__
     to represent the name of the module it is called from
