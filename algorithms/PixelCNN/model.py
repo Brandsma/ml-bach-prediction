@@ -13,28 +13,29 @@
 
 import numpy as np
 import tensorflow as tf
+from matplotlib import image
 from tensorflow import keras
 from tensorflow.keras import layers
 from tqdm import tqdm
-from matplotlib import image
-
 
 """
 ## Getting the Data
 """
 
 # Model / data parameters
-num_classes = 10
-input_shape = (28, 28, 1)
-n_residual_blocks = 5
+num_classes = 1
+input_shape = (106, 100, 1)
+n_residual_blocks = 10
 # The data, split between train and test sets
 # (x, _), (y, _) = keras.datasets.mnist.load_data()
 # Concatenate all of the images together
 # data = np.concatenate((x, y), axis=0)
-data = np.empty((38*50,106,100))
+data = np.empty((38 * 50, 106, 100))
 for _idx in range(50):
-    for idx in range(1,38):
-        data[idx] = image.imread("sample_data/Unfin_instrument_0_{}.png".format(idx))
+    for idx in range(1, 36):
+        data[_idx * 36 + idx - 1] = image.imread(
+            "sample_data/Unfin/instrument_0_{}.png".format(idx)
+        )
 # Round all pixel values less than 33% of the max 256 value to 0
 # anything above this value gets rounded up to 1 so that all values are either
 # 0 or 1
@@ -128,7 +129,13 @@ pixel_cnn.compile(optimizer=adam, loss="binary_crossentropy")
 
 pixel_cnn.summary()
 pixel_cnn.fit(
-    x=data, y=data, batch_size=1, steps_per_epoch=5, epochs=50, validation_split=0.1, verbose=2
+    x=data,
+    y=data,
+    batch_size=1,
+    steps_per_epoch=5,
+    epochs=250,
+    validation_split=0.1,
+    verbose=2,
 )
 
 """
