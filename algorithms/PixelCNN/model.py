@@ -23,7 +23,7 @@ from tqdm import tqdm
 """
 
 # Model / data parameters
-num_classes = 1
+num_classes = 10
 input_shape = (106, 100, 1)
 n_residual_blocks = 10
 # The data, split between train and test sets
