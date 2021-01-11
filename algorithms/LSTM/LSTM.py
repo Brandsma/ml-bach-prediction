@@ -2,8 +2,9 @@
 # Relative insensitivity to gap length is an advantage of LSTM over RNNs, hidden Markov models and other sequence learning methods in numerous applications.
 import numpy as np
 from math import e
+from algorithms.algorithm_base import PredictionModel
 
-class LSTM():
+class LSTM(PredictionModel):
 
     def __init__(self, h_size, d_size):
         # model values
@@ -74,7 +75,7 @@ class LSTM():
         o_t = sigmoid(gate(h_t_0, x_t, W_o, U_o, b_o))
 
         # Tanh layer
-        h_t = o_t * tanh_TODO(C_t)
+        h_t = o_t * tanh(C_t)
         return o_t, h_t
 
     # The forget gate controls the extent to which a value remains in the cell
