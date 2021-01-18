@@ -74,5 +74,5 @@ if __name__ == "__main__":
     print(model)
 
     print("Predicting...")
-    # print(predict(model))
+    print(predict(model, num_of_sample=1))
     print("Done.")
