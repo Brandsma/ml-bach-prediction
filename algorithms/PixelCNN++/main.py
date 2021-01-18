@@ -1,20 +1,22 @@
-import tensorflow as tf
-import tensorflow_datasets as tfds
 import tensorflow_probability as tfp
+import tensorflow_datasets as tfds
+import tensorflow as tf
+import logger
+import argparse
+
+log = None
 
 
-def image_preprocess(x):
-    # TODO: Transform to greyscale/binary?
-    x['image'] = tf.cast(x['image'], tf.float32)
-    return (x['image'],)  # (input, output) of the model
+def predict(model, num_of_sample=5):
+    # Return n randomly sampled elements
+    return model.sample(num_of_sample)
 
 
-def train(data, epochs=10, image_shape=(28, 28, 1)):
+def train(data, epochs=10, image_shape=(128, 128, 1)):
+    log.info("Starting training...")
     tfd = tfp.distributions
     tfk = tf.keras
     tfkl = tf.keras.layers
-
-    # data = input_data.map(image_preprocess)
 
     # Define a Pixel CNN network
     # TODO: Look at documentation of pixelCNN
@@ -50,29 +52,73 @@ def train(data, epochs=10, image_shape=(28, 28, 1)):
     # TODO: Save the model at some point
     model.fit(data, epochs=epochs, verbose=True)
 
+    log.debug(dist)
+    log.info("Training done")
+
     return dist
 
 
-# @tf.function(experimental_relax_shapes=True)
-def predict(model, num_of_sample=5):
-    # Return 5 randomly sampled elements
-    return model.sample(num_of_sample)
+def main(config):
+
+    log.info("Starting...")
+
+    log.info("Loading images...")
+    data = tf.keras.preprocessing.image_dataset_from_directory(
+        config.input_dir, seed=config.seed, color_mode="grayscale", batch_size=1, image_size=(128, 128))
+    log.debug(data)
+    log.info("Loading images done")
+
+    if config.training:
+        model = train(data, epochs=config.epochs)
+
+        log.info("Saving model...")
+        # TODO: Save modelsave_
+        #tf.saved_model.save(model, config.model)
+        log.info("Saving done")
+    else:
+        # TODO: Load model
+        pass
+        # model = None
+
+    log.info("Predicting...")
+    prediction = predict(model, num_of_sample=1)
+    log.debug(prediction)
+    log.info("Prediction done...")
+
+    log.info("Saving images to disk...")
+    image_counter = 0
+    for image in prediction:
+        tf.keras.preprocessing.save_img(
+            config.output_dir + f"output_{image_counter}.png", image)
+    log.info("Saving done")
+
+    log.info("Process complete")
 
 
 if __name__ == "__main__":
-    print("Starting...")
-    directory = "./input"
+    parser = argparse.ArgumentParser()
 
-    print("Loading images...")
-    data = tf.keras.preprocessing.image_dataset_from_directory(
-        directory, seed=1337, color_mode="grayscale", batch_size=1, image_size=(128, 128))
-    print(data)
+    parser.add_argument(
+        "input_dir", help="input directory where all images are found")
+    parser.add_argument(
+        "output_dir", help="output directory where all newly generated images will be placed")
+    parser.add_argument(
+        "--output_number", help="Depends on how many images should be sampled from the resulting model distribution", default=1, type=int)
+    parser.add_argument(
+        "--training", help="flag: Set to true when training", action="store_true")
+    parser.add_argument(
+        "--epochs", help="Set the number of epochs", default=10, type=int)
+    parser.add_argument(
+        "--seed", help="value: Set a seed for the determined randomness", default=None, type=int)
+    parser.add_argument(
+        "--model", help="path to saved keras distribution model", default="./models/cnn_save")
+    parser.add_argument("--log_level", help="Specifies the level of precision for the logger",
+                        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], default="INFO")
 
-    print("Starting training...")
-    image_shape = (128, 128, 1)
-    model = train(data, epochs=1, image_shape=image_shape)
-    print(model)
+    config = parser.parse_args()
 
-    print("Predicting...")
-    print(predict(model, num_of_sample=1))
-    print("Done.")
+    # Setup global logger
+    log = logger.setup_logger(__name__, level=config.log_level)
+
+    # Run the model with the specified parameters
+    main(config)
