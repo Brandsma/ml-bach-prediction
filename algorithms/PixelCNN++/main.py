@@ -3,17 +3,19 @@ import tensorflow_datasets as tfds
 import tensorflow as tf
 import logger
 import argparse
+import dill
 
 log = None
 
 
-def predict(model, num_of_sample=5):
+def predict(model, num_of_samples=5):
     # Return n randomly sampled elements
-    return model.sample(num_of_sample)
+    # dist = model.
+    return model.sample(num_of_samples)
 
 
-def train(data, epochs=10, image_shape=(128, 128, 1)):
-    log.info("Starting training...")
+def create_model(config, image_shape):
+    # Create the model
     tfd = tfp.distributions
     tfk = tf.keras
     tfkl = tf.keras.layers
@@ -48,14 +50,33 @@ def train(data, epochs=10, image_shape=(128, 128, 1)):
         optimizer=tfk.optimizers.Adam(.001),
         metrics=[])
 
-    # TODO: Understand
-    # TODO: Save the model at some point
-    model.fit(data, epochs=epochs, verbose=True)
+    return (model, dist)
 
-    log.debug(dist)
+
+def train(data, config, image_shape=(128, 128, 1)):
+    log.info("Starting training...")
+
+    # Create model
+    model, dist = create_model(config, image_shape)
+
+    # Create checkpoints of the model
+    cp_callback = tf.keras.callbacks.ModelCheckpoint(
+        filepath=config.checkpoints + "cp-{epoch:04d}.ckpt",
+        verbose=1,
+        save_weights_only=True,
+        save_freq=10*config.batch_size)
+
+    # TODO: Understand
+    model.fit(data, epochs=config.epochs,
+              verbose=True, callbacks=[cp_callback])
+
+    # Save the model
+    # model.save("{}/model/saved_model".format(config.output_dir))
+
+    log.debug(model)
     log.info("Training done")
 
-    return dist
+    return model
 
 
 def main(config):
@@ -69,27 +90,31 @@ def main(config):
     log.info("Loading images done")
 
     if config.training:
-        model = train(data, epochs=config.epochs)
-
-        log.info("Saving model...")
-        # TODO: Save modelsave_
-        #tf.saved_model.save(model, config.model)
-        log.info("Saving done")
+        model = train(data, config)
     else:
-        # TODO: Load model
-        pass
-        # model = None
+        log.info("Loading model...")
+        # Load model
+        latest = tf.train.latest_checkpoint(config.checkpoints)
+        # Create a new model instance
+        # NOTE: dist might still be uninitialized after loading, check later
+        model, dist = create_model(config, (128, 128, 1))
+        # Load the params back into the model
+        model.load_weights(latest).expect_partial()
+
+        # TODO
+        # tf.keras.utils.plot_model(model, "model_graph.png")
+        log.info("Loading done")
 
     log.info("Predicting...")
-    prediction = predict(model, num_of_sample=1)
+    prediction = predict(dist, config.output_number)
     log.debug(prediction)
     log.info("Prediction done...")
 
     log.info("Saving images to disk...")
-    image_counter = 0
-    for image in prediction:
-        tf.keras.preprocessing.save_img(
-            config.output_dir + f"output_{image_counter}.png", image)
+    #image_counter = 0
+    # for image in prediction:
+    # tf.keras.preprocessing.save_img(
+    #      config.output_dir + f"output_{image_counter}.png", image)
     log.info("Saving done")
 
     log.info("Process complete")
@@ -109,6 +134,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--epochs", help="Set the number of epochs", default=10, type=int)
     parser.add_argument(
+        "--batch_size", help="Sets the size of the batch, ideally this divides nicely through the number of images", default=1, type=int)
+    parser.add_argument(
+        "--checkpoints", help="Set the path to save checkpoints", default="./checkpoints/")
+    parser.add_argument(
         "--seed", help="value: Set a seed for the determined randomness", default=None, type=int)
     parser.add_argument(
         "--model", help="path to saved keras distribution model", default="./models/cnn_save")
@@ -116,6 +145,9 @@ if __name__ == "__main__":
                         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], default="INFO")
 
     config = parser.parse_args()
+
+    print("Program will run with following parameters:")
+    print(config)
 
     # Setup global logger
     log = logger.setup_logger(__name__, level=config.log_level)
