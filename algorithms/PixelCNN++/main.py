@@ -4,14 +4,17 @@ import tensorflow as tf
 import logger
 import argparse
 import dill
+from tqdm import tqdm
 
 log = None
 
 
 def predict(model, num_of_samples=5):
     # Return n randomly sampled elements
-    # dist = model.
-    return model.sample(num_of_samples)
+    samples = []
+    for _ in tqdm(range(num_of_samples), desc="sample number "):
+        samples.append(model.sample())
+    return samples
 
 
 def create_model(config, image_shape):
