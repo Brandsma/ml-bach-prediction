@@ -73,6 +73,7 @@ def train(data, config, image_shape=(128, 128, 1)):
     # Save the model
     # model.save("{}/model/saved_model".format(config.output_dir))
 
+    log.debug(dist)
     log.debug(model)
     log.info("Training done")
 
@@ -85,7 +86,7 @@ def main(config):
 
     log.info("Loading images...")
     data = tf.keras.preprocessing.image_dataset_from_directory(
-        config.input_dir, seed=config.seed, color_mode="grayscale", batch_size=1, image_size=(128, 128))
+        config.input_dir, seed=config.seed, color_mode="grayscale", batch_size=config.batch_size, image_size=(128, 128))
     log.debug(data)
     log.info("Loading images done")
 
@@ -111,10 +112,10 @@ def main(config):
     log.info("Prediction done...")
 
     log.info("Saving images to disk...")
-    #image_counter = 0
-    # for image in prediction:
-    # tf.keras.preprocessing.save_img(
-    #      config.output_dir + f"output_{image_counter}.png", image)
+    image_counter = 0
+    for image in prediction:
+        tf.keras.preprocessing.image.save_img(
+            config.output_dir + f"output_{image_counter}.png", image)
     log.info("Saving done")
 
     log.info("Process complete")
@@ -134,7 +135,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--epochs", help="Set the number of epochs", default=10, type=int)
     parser.add_argument(
-        "--batch_size", help="Sets the size of the batch, ideally this divides nicely through the number of images", default=1, type=int)
+        "--batch_size", help="Sets the size of the batch, ideally this divides nicely through the number of images", default=16, type=int)
     parser.add_argument(
         "--checkpoints", help="Set the path to save checkpoints", default="./checkpoints/")
     parser.add_argument(
