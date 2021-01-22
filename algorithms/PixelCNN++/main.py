@@ -80,7 +80,7 @@ def train(data, config, image_shape=(128, 128, 1)):
     log.debug(model)
     log.info("Training done")
 
-    return model
+    return (model, dist)
 
 
 def main(config):
@@ -94,7 +94,7 @@ def main(config):
     log.info("Loading images done")
 
     if config.training:
-        model = train(data, config)
+        model, dist = train(data, config)
     else:
         log.info("Loading model...")
         # Load model
