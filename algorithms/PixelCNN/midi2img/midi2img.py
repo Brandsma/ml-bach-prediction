@@ -1,5 +1,6 @@
 # Code copied from: https://github.com/mathigatti/midi2img/blob/master/midi2img.py
 import os
+import importlib.util
 from music21 import converter, instrument, note, chord
 import json
 import sys
