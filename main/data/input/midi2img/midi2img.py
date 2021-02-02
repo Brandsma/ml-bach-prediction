@@ -53,7 +53,10 @@ def midi2image(midi_path, output_path, lowest, highest, binary=False):
     # The lowest and highest parameters indicate what the midi code is of
     # the lowest and highest notes respectively, and image resolution is adjusted to this
     # Warning: function returns nothing (None), but catch the return anyway
-    mid = converter.parse(midi_path)
+    try:
+        mid = converter.parse(midi_path)
+    except:
+        print(f"Warning: skipping malformed midi at {midi_path}")
     binary_matrix_list = {}  # parts
     parts = mid.recurse().getElementsByClass("Part")
 
@@ -158,46 +161,47 @@ def midi2image(midi_path, output_path, lowest, highest, binary=False):
         return None
 
 
-def get_highest_lowest(subdir, files):
+def get_highest_lowest(midi_path):
     # We're gonna do two passes over all midi files: the first will index thehighest and lowest midi notes found,
     # thus specifying the range of pixels we need in the vertical direction. This is then passed as an argument to midi2img
     # and stored in a textfile named "latestImageSettings.txt".
-    mid = converter.parse(subdir + "/" + files[0])
 
     # initialize values
-    lowestnote = int(mid.recurse().notes[0].pitch.ps)
-    highestnote = lowestnote
+    lowestnote = 60
+    highestnote = 60
 
-    for filename in files:
-        try:
-            mid = converter.parse(subdir + "/" + filename)
-        except:
-            continue
+    for subdir, _, files in os.walk(midi_path):
+        for filename in files:
+            try:
+                mid = converter.parse(subdir + "/" + filename)
+            except:
+                continue
 
-        # Now let's find the actual highest and lowest
-        for item in mid.recurse().getElementsByClass("Note"):
-            highestnote = max(highestnote, int(item.pitch.ps))
-            lowestnote = min(lowestnote, int(item.pitch.ps))
+            # Now let's find the actual highest and lowest
+            for item in mid.recurse().getElementsByClass("Note"):
+                highestnote = max(highestnote, int(item.pitch.ps))
+                lowestnote = min(lowestnote, int(item.pitch.ps))
 
     return (highestnote, lowestnote)
 
 
 def main(midi_path, output_path):
-    for subdir, _, files in os.walk(midi_path):
-        if files is None:
-            continue
-        # First loop over all files to get range of notes
-        (highest_note, lowest_note) = get_highest_lowest(subdir, files)
+    print("Getting note range...")
+    # First loop over all files to get range of notes
+    (highest_note, lowest_note) = get_highest_lowest(midi_path)
 
+    print("Writing specification file...")
     # Write this specification to the file:
     with open(output_path + "latestImageSettings.txt", "w") as f:
         f.write("{}\n{}".format(lowest_note, highest_note))
 
+    print("Transforming midi to img...")
     for subdir, _, files in os.walk(midi_path):
         # Then transform all files to images
         for filename in files:
             midi_location = subdir + "/" + filename
             _ = midi2image(midi_location, output_path, lowest_note, highest_note)
+    print("  Done  ")
 
 
 if __name__ == "__main__":
