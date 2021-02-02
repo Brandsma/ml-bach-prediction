@@ -5,9 +5,9 @@ import logger
 import argparse
 import dill
 from tqdm import tqdm
+from keras.callbacks import ModelCheckpoint, EarlyStopping
 
 log = None
-
 
 def predict(model, num_of_samples=5):
     # Return n randomly sampled elements
@@ -55,6 +55,19 @@ def create_model(config, image_shape):
 
     return (model, dist)
 
+def get_callbacks():
+    # Create checkpoints of the model
+    cp_callback = ModelCheckpoint(
+        filepath=config.checkpoints + "cp-{epoch:04d}.ckpt",
+        verbose=1,
+        save_weights_only=True,
+        save_freq=10 * config.batch_size)
+
+    # Early Stopping when loss stops improving
+    early_stop = EarlyStopping(monitor="loss", min_delta=0, patience=0, verbose=1, mode='min')
+
+    return [cp_callback, early_stop]
+
 
 def train(data, config, image_shape=(128, 128, 1)):
     log.info("Starting training...")
@@ -62,16 +75,11 @@ def train(data, config, image_shape=(128, 128, 1)):
     # Create model
     model, dist = create_model(config, image_shape)
 
-    # Create checkpoints of the model
-    cp_callback = tf.keras.callbacks.ModelCheckpoint(
-        filepath=config.checkpoints + "cp-{epoch:04d}.ckpt",
-        verbose=1,
-        save_weights_only=True,
-        save_freq=10*config.batch_size)
 
-    # TODO: Understand
+
+     # TODO: Understand
     model.fit(data, epochs=config.epochs,
-              verbose=True, callbacks=[cp_callback])
+              verbose=True, callbacks=get_callbacks())
 
     # Save the model
     # model.save("{}/model/saved_model".format(config.output_dir))
@@ -92,6 +100,7 @@ def main(config):
         config.input_dir, seed=config.seed, color_mode="grayscale", batch_size=config.batch_size, image_size=(128, 128))
     log.debug(data)
     log.info("Loading images done")
+
 
     if config.training:
         model, dist = train(data, config)
