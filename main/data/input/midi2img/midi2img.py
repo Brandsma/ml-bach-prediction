@@ -175,7 +175,7 @@ def get_highest_lowest(subdir, files):
             continue
 
         # Now let's find the actual highest and lowest
-        for item in mid.recurse().notes:
+        for item in mid.recurse().getElementsByClass("Note"):
             highestnote = max(highestnote, int(item.pitch.ps))
             lowestnote = min(lowestnote, int(item.pitch.ps))
 
