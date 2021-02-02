@@ -1,8 +1,20 @@
 from PIL import Image
 import numpy as np
+import importlib.util
 from music21 import instrument, note, chord, stream
+import sys
 
-lowerBoundNote = 21
+
+# Get the settings from the file in the other folder:
+if len(sys.argv) > 2:
+    # The used may specify the lower bound note as second argument:
+    lowerBoundNote = int(sys.argv[2])
+else:
+    # Otherwise, we'll just fetch it from the spec file
+    specfile = open("../midi2img/latestImageSettings.txt", "r")
+    lowerBoundNote = int(specfile.readline())
+
+
 def column2notes(column):
     notes = []
     for i in range(len(column)):

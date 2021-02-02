@@ -1,5 +1,6 @@
 # Code copied from: https://github.com/mathigatti/midi2img/blob/master/midi2img.py
 import os
+import importlib.util
 from music21 import converter, instrument, note, chord
 import json
 import sys
@@ -47,8 +48,9 @@ def midi2binary(midi_path):
     return midi2image(midi_path, True)
 
 
-def midi2image(midi_path, binary=False):
-    # Cover your eyes, children.
+def midi2image(midi_path, lowest, highest, binary=False):
+    # The lowest and highest parameters indicate what the midi code is of 
+    # the lowest and highest notes respectively, and image resolution is adjusted to this 
     # Warning: function returns nothing (None), but catch the return anyway
     mid = converter.parse(midi_path)
     binary_matrix_list = {}  # parts
@@ -65,8 +67,8 @@ def midi2image(midi_path, binary=False):
 
         for part_name, values in data.items():
             # https://en.wikipedia.org/wiki/Scientific_pitch_notation#Similar_systems
-            upperBoundNote = 127  # height of image
-            lowerBoundNote = 21
+            upperBoundNote = highest + 1  # height of image
+            lowerBoundNote = lowest
             maxSongLength = 128  # length of image
 
             # list of entries in part (each of which will contrain matrices)
@@ -146,5 +148,27 @@ def midi2image(midi_path, binary=False):
 
 midi_path = sys.argv[1]
 directory = os.listdir(midi_path)
+
+# We're gonna do two passes over all midi files: the first will index thehighest and lowest midi notes found,
+# thus specifying the range of pixels we need in the vertical direction. This is then passed as an argument to midi2img
+# and stored in a textfile named "latestImageSettings.txt".
+
+mid = converter.parse(midi_path + directory[0])
+lowestnote = int(mid.recurse().notes[0].pitch.ps)
+highestnote = lowestnote
+
 for filename in directory:
-    matrix = midi2image(midi_path + filename)
+    mid = converter.parse(midi_path + filename)
+    # first just set max and min to some value we know occurs:
+    
+    # Now let's find the actual highest and lowest
+    for item in mid.recurse().notes:
+        highestnote = max(highestnote, int(item.pitch.ps))
+        lowestnote = min(lowestnote, int(item.pitch.ps))
+
+# Write this specification to the file:
+specfile = open("latestImageSettings.txt", "w")
+specfile.write("{}\n{}".format(lowestnote, highestnote))
+
+for filename in directory:
+    matrix = midi2image(midi_path + filename, lowestnote, highestnote)
