@@ -57,6 +57,7 @@ def midi2image(midi_path, output_path, lowest, highest, binary=False):
         mid = converter.parse(midi_path)
     except:
         print(f"Warning: skipping malformed midi at {midi_path}")
+        return
     binary_matrix_list = {}  # parts
     parts = mid.recurse().getElementsByClass("Part")
 
@@ -146,12 +147,13 @@ def midi2image(midi_path, output_path, lowest, highest, binary=False):
                         + midi_path.split("/")[-1].replace(
                             ".mid", f"_{part_name}_{index}.png"
                         ),
-                        matrix,
+                        matrix.astype(np.uint8),
                     )
                 elif binary:
                     binary_matrix_list[part_name].append(matrix > 0)
                 else:
-                    print("Empty generated image discarded!")
+                    pass
+                    # print("Empty generated image discarded!")
                 index += 1
                 repetitions += 1
     if binary:
