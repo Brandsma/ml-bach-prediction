@@ -194,6 +194,8 @@ def main(midi_path, output_path):
 
     print("Writing specification file...")
     # Write this specification to the file:
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
     with open(output_path + "latestImageSettings.txt", "w") as f:
         f.write("{}\n{}".format(lowest_note, highest_note))
 
