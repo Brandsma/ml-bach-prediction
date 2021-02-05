@@ -5,6 +5,7 @@ import logger
 import argparse
 import dill
 from tqdm import tqdm
+from keras.callbacks import ModelCheckpoint, EarlyStopping
 
 log = None
 
@@ -50,10 +51,24 @@ def create_model(config, image_shape):
     # Compile and train the model
     # TODO: Understand
     model.compile(
-        optimizer=tfk.optimizers.Adam(.001),
+        optimizer=tfk.optimizers.Nadam(.001),
         metrics=[])
 
     return (model, dist)
+    
+
+def get_callbacks():
+    # Create checkpoints of the model
+    cp_callback = ModelCheckpoint(
+        filepath=config.checkpoints + "cp-{epoch:04d}.ckpt",
+        verbose=1,
+        save_weights_only=True,
+        save_freq=10 * config.batch_size)
+
+    # Early Stopping when loss stops improving
+    early_stop = EarlyStopping(monitor="loss", min_delta=0, patience=2, verbose=1, mode='min')
+
+    return [cp_callback, early_stop]
 
 
 def train(data, config, image_shape=(128, 128, 1)):
@@ -62,16 +77,9 @@ def train(data, config, image_shape=(128, 128, 1)):
     # Create model
     model, dist = create_model(config, image_shape)
 
-    # Create checkpoints of the model
-    cp_callback = tf.keras.callbacks.ModelCheckpoint(
-        filepath=config.checkpoints + "cp-{epoch:04d}.ckpt",
-        verbose=1,
-        save_weights_only=True,
-        save_freq=10*config.batch_size)
-
     # TODO: Understand
     model.fit(data, epochs=config.epochs,
-              verbose=True, callbacks=[cp_callback])
+              verbose=True, callbacks=get_callbacks())
 
     # Save the model
     # model.save("{}/model/saved_model".format(config.output_dir))
