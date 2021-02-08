@@ -1,14 +1,16 @@
-import tensorflow_probability as tfp
-import tensorflow_datasets as tfds
-import tensorflow as tf
-import logger
 import argparse
+
 import dill
-from tqdm import tqdm
-from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
 import matplotlib.pyplot as plt
 import numpy as np
+import tensorflow as tf
+import tensorflow_datasets as tfds
+import tensorflow_probability as tfp
+from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from sklearn.model_selection import train_test_split
+from tqdm import tqdm
+
+import logger
 
 log = None
 
@@ -19,6 +21,7 @@ def predict(model, num_of_samples=5):
     for _ in tqdm(range(num_of_samples), desc="sample number "):
         samples.append(model.sample())
     return samples
+
 
 def create_model(config, image_shape):
     # Create the model
@@ -34,7 +37,7 @@ def create_model(config, image_shape):
         num_hierarchies=2,
         num_filters=32,
         num_logistic_mix=5,
-        dropout_p=.3,
+        dropout_p=0.3,
     )
 
     # Define the model input
@@ -52,12 +55,10 @@ def create_model(config, image_shape):
 
     # Compile and train the model
     # TODO: Understand
-    model.compile(
-        optimizer=tfk.optimizers.Adamax(.001),
-        metrics=[])
+    model.compile(optimizer=tfk.optimizers.Adamax(0.001), metrics=[])
 
     return (model, dist)
-    
+
 
 def get_callbacks():
     # Create checkpoints of the model
@@ -65,10 +66,13 @@ def get_callbacks():
         filepath=config.checkpoints + "cp-{epoch:04d}.ckpt",
         verbose=1,
         save_weights_only=True,
-        save_freq=10 * config.batch_size)
+        save_freq=10 * config.batch_size,
+    )
 
     # Early Stopping when loss stops improving
-    early_stop = EarlyStopping(monitor="loss", min_delta=0, patience=25, verbose=1, mode='min')
+    early_stop = EarlyStopping(
+        monitor="loss", min_delta=0, patience=25, verbose=1, mode="min"
+    )
 
     return [cp_callback, early_stop]
 
@@ -80,8 +84,9 @@ def train(data, config, image_shape=(128, 128, 1)):
     model, dist = create_model(config, image_shape)
 
     # TODO: Understand
-    history = model.fit(data, epochs=config.epochs,
-              verbose=True , callbacks=get_callbacks())
+    history = model.fit(
+        data, epochs=config.epochs, verbose=True, callbacks=get_callbacks()
+    )
     # history = model.fit(data, epochs=config.epochs, validation_split=0.2,
     #           verbose=True , callbacks=get_callbacks())
 
@@ -92,7 +97,6 @@ def train(data, config, image_shape=(128, 128, 1)):
     log.debug(model)
     log.info("Training done")
 
-
     log.info("Plotting results...")
     plt.figure()
     epochs_range = range(config.epochs)
@@ -101,13 +105,11 @@ def train(data, config, image_shape=(128, 128, 1)):
     plt.plot(epochs_range, loss, label="training loss")
     # plt.plot(epochs_range, val_loss, label="validation loss")
     plt.xlabel("Epochs")
-    plt.legend(loc='lower right')
-    plt.title('Training and Validation Loss')
+    plt.legend(loc="lower right")
+    plt.title("Training and Validation Loss")
     plt.show()
 
     return (model, dist)
-
-
 
 
 def main(config):
@@ -116,7 +118,12 @@ def main(config):
 
     log.info("Loading images...")
     data = tf.keras.preprocessing.image_dataset_from_directory(
-        config.input_dir, seed=config.seed, color_mode="grayscale", batch_size=config.batch_size, image_size=(128, 128))
+        config.input_dir,
+        seed=config.seed,
+        color_mode="grayscale",
+        batch_size=config.batch_size,
+        image_size=(128, 128),
+    )
     # data = tf.keras.preprocessing.image_dataset_from_directory(
     #     config.input_dir, seed=config.seed, color_mode="grayscale", batch_size=config.batch_size, image_size=(128, 128)
     #     , validation_split=0.2, subset="validation")
@@ -153,7 +160,9 @@ def main(config):
     image_counter = 0
     for image in prediction:
         tf.keras.preprocessing.image.save_img(
-            config.output_dir + f"output_{image_counter}.png", image)
+            config.output_dir + f"output_{image_counter}.png", image
+        )
+        image_counter += 1
     log.info("Saving done")
 
     log.info("Process complete")
@@ -162,26 +171,49 @@ def main(config):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
+    parser.add_argument("input_dir", help="input directory where all images are found")
     parser.add_argument(
-        "input_dir", help="input directory where all images are found")
+        "output_dir",
+        help="output directory where all newly generated images will be placed",
+    )
     parser.add_argument(
-        "output_dir", help="output directory where all newly generated images will be placed")
+        "--output_number",
+        help="Depends on how many images should be sampled from the resulting model distribution",
+        default=2,
+        type=int,
+    )
     parser.add_argument(
-        "--output_number", help="Depends on how many images should be sampled from the resulting model distribution", default=1, type=int)
+        "--training", help="flag: Set to true when training", action="store_true"
+    )
     parser.add_argument(
-        "--training", help="flag: Set to true when training", action="store_true")
+        "--epochs", help="Set the number of epochs", default=10, type=int
+    )
     parser.add_argument(
-        "--epochs", help="Set the number of epochs", default=10, type=int)
+        "--batch_size",
+        help="Sets the size of the batch, ideally this divides nicely through the number of images",
+        default=16,
+        type=int,
+    )
     parser.add_argument(
-        "--batch_size", help="Sets the size of the batch, ideally this divides nicely through the number of images", default=16, type=int)
+        "--checkpoints", help="Set the path to save checkpoints", default="."
+    )
     parser.add_argument(
-        "--checkpoints", help="Set the path to save checkpoints", default="./checkpoints/")
+        "--seed",
+        help="value: Set a seed for the determined randomness",
+        default=None,
+        type=int,
+    )
     parser.add_argument(
-        "--seed", help="value: Set a seed for the determined randomness", default=None, type=int)
+        "--model",
+        help="path to saved keras distribution model",
+        default="./models/cnn_save",
+    )
     parser.add_argument(
-        "--model", help="path to saved keras distribution model", default="./models/cnn_save")
-    parser.add_argument("--log_level", help="Specifies the level of precision for the logger",
-                        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], default="INFO")
+        "--log_level",
+        help="Specifies the level of precision for the logger",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default="INFO",
+    )
 
     config = parser.parse_args()
 
