@@ -5,7 +5,10 @@ import logger
 import argparse
 import dill
 from tqdm import tqdm
-from keras.callbacks import ModelCheckpoint, EarlyStopping
+from keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.model_selection import train_test_split
 
 log = None
 
@@ -16,7 +19,6 @@ def predict(model, num_of_samples=5):
     for _ in tqdm(range(num_of_samples), desc="sample number "):
         samples.append(model.sample())
     return samples
-
 
 def create_model(config, image_shape):
     # Create the model
@@ -51,7 +53,7 @@ def create_model(config, image_shape):
     # Compile and train the model
     # TODO: Understand
     model.compile(
-        optimizer=tfk.optimizers.Nadam(.001),
+        optimizer=tfk.optimizers.Adamax(.001),
         metrics=[])
 
     return (model, dist)
@@ -66,7 +68,7 @@ def get_callbacks():
         save_freq=10 * config.batch_size)
 
     # Early Stopping when loss stops improving
-    early_stop = EarlyStopping(monitor="loss", min_delta=0, patience=2, verbose=1, mode='min')
+    early_stop = EarlyStopping(monitor="loss", min_delta=0, patience=25, verbose=1, mode='min')
 
     return [cp_callback, early_stop]
 
@@ -78,8 +80,10 @@ def train(data, config, image_shape=(128, 128, 1)):
     model, dist = create_model(config, image_shape)
 
     # TODO: Understand
-    model.fit(data, epochs=config.epochs,
-              verbose=True, callbacks=get_callbacks())
+    history = model.fit(data, epochs=config.epochs,
+              verbose=True , callbacks=get_callbacks())
+    # history = model.fit(data, epochs=config.epochs, validation_split=0.2,
+    #           verbose=True , callbacks=get_callbacks())
 
     # Save the model
     # model.save("{}/model/saved_model".format(config.output_dir))
@@ -88,7 +92,22 @@ def train(data, config, image_shape=(128, 128, 1)):
     log.debug(model)
     log.info("Training done")
 
+
+    log.info("Plotting results...")
+    plt.figure()
+    epochs_range = range(config.epochs)
+    loss = history.history["loss"]
+    # val_loss = history.history["val_loss"]
+    plt.plot(epochs_range, loss, label="training loss")
+    # plt.plot(epochs_range, val_loss, label="validation loss")
+    plt.xlabel("Epochs")
+    plt.legend(loc='lower right')
+    plt.title('Training and Validation Loss')
+    plt.show()
+
     return (model, dist)
+
+
 
 
 def main(config):
@@ -98,8 +117,16 @@ def main(config):
     log.info("Loading images...")
     data = tf.keras.preprocessing.image_dataset_from_directory(
         config.input_dir, seed=config.seed, color_mode="grayscale", batch_size=config.batch_size, image_size=(128, 128))
+    # data = tf.keras.preprocessing.image_dataset_from_directory(
+    #     config.input_dir, seed=config.seed, color_mode="grayscale", batch_size=config.batch_size, image_size=(128, 128)
+    #     , validation_split=0.2, subset="validation")
     log.debug(data)
     log.info("Loading images done")
+
+    # log.info("Preprocessing...")
+    # input_data = data.as_numpy_iterator()
+    # X_train, X_test, y_train, y_test = train_test_split(input_data, test_size=0.25,
+    #                                                     random_state=0)
 
     if config.training:
         model, dist = train(data, config)
