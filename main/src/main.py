@@ -1,12 +1,9 @@
 import argparse
 
-import dill
 import matplotlib.pyplot as plt
-import numpy as np
 import tensorflow as tf
-import tensorflow_datasets as tfds
 import tensorflow_probability as tfp
-from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+from keras.callbacks import EarlyStopping, ModelCheckpoint
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
@@ -71,7 +68,7 @@ def get_callbacks():
 
     # Early Stopping when loss stops improving
     early_stop = EarlyStopping(
-        monitor="loss", min_delta=0, patience=25, verbose=1, mode="min"
+        monitor="loss", min_delta=0, patience=config.patience, verbose=1, mode="min"
     )
 
     return [cp_callback, early_stop]
@@ -141,9 +138,10 @@ def main(config):
         log.info("Loading model...")
         # Load model
         latest = tf.train.latest_checkpoint(config.checkpoints)
+
         # Create a new model instance
-        # NOTE: dist might still be uninitialized after loading, check later
         model, dist = create_model(config, (128, 128, 1))
+
         # Load the params back into the model
         model.load_weights(latest).expect_partial()
 
@@ -213,6 +211,12 @@ if __name__ == "__main__":
         help="Specifies the level of precision for the logger",
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         default="INFO",
+    )
+    parser.add_argument(
+        "--patience",
+        help="patience level of early stopping",
+        type=int,
+        default=10,
     )
 
     config = parser.parse_args()
