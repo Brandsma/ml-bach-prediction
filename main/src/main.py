@@ -137,11 +137,6 @@ def setup_argument_parser():
         type=int,
     )
     parser.add_argument(
-        "--model",
-        help="path to saved keras distribution model",
-        default="./models/cnn_save",
-    )
-    parser.add_argument(
         "--log_level",
         help="Specifies the level of precision for the logger",
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
@@ -152,6 +147,19 @@ def setup_argument_parser():
         help="patience level of early stopping",
         type=int,
         default=10,
+    )
+    parser.add_argument(
+        "--learning_rate",
+        help="learning rate of the optimizer, range is 0-1",
+        type=float,
+        default=0.001,
+    )
+    parser.add_argument(
+        "--optimizer",
+        help="Determines the optimizer to use for gradient descent",
+        type=str,
+        default="adam",
+        choices=["adam", "nadam", "adamax"],
     )
 
     return parser.parse_args()

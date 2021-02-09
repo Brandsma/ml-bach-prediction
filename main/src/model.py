@@ -10,6 +10,17 @@ from logger import setup_logger
 log = setup_logger(__name__)
 
 
+def get_optimizer(name, learning_rate):
+    tfk = tf.keras
+    optimizers = {
+        "adam": tfk.optimizers.Adam(learning_rate),
+        "nadam": tfk.optimizers.Nadam(learning_rate),
+        "adamax": tfk.optimizers.Adamax(learning_rate),
+    }
+
+    return optimizers[name]
+
+
 def create_model(config, image_shape):
     # Create the model
     tfd = tfp.distributions
@@ -43,7 +54,10 @@ def create_model(config, image_shape):
     # Compile and train the model
     # TODO: Understand
     # Adam, Adamax and Nadam
-    model.compile(optimizer=tfk.optimizers.Adamax(0.001), metrics=[])
+
+    current_optimizer = get_optimizer(config.optimizer, config.learning_rate)
+
+    model.compile(optimizer=current_optimizer, metrics=[])
 
     return (model, dist)
 
@@ -71,7 +85,7 @@ def train(data, config, image_shape=(128, 128, 1)):
     # Shuffle and repeat the data every epoch
     # TODO: Shuffly should have length of dataset
     # data = data.shuffle()
-    data = data.repeat(3)
+    # data = data.repeat(3)
 
     # Create model
     model, dist = create_model(config, image_shape)
