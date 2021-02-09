@@ -70,8 +70,11 @@ def save_images(prediction, config):
     log.info("Saving images to disk...")
     if not config.output_dir.endswith("/"):
         config.output_dir += "/"
-    if os.path.isdir(config.output_dir):
-        os.makedirs(config.output_dir)
+    if not os.path.isdir(config.output_dir):
+        try:
+            os.makedirs(config.output_dir)
+        except:
+            pass
 
     image_counter = 0
     for image in prediction:
