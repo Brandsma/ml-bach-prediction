@@ -155,6 +155,12 @@ def setup_argument_parser():
         default=0.001,
     )
     parser.add_argument(
+        "--dropout_rate",
+        help="dropout rate of the pixelCNN distribution",
+        type=float,
+        default=0.5,
+    )
+    parser.add_argument(
         "--optimizer",
         help="Determines the optimizer to use for gradient descent",
         type=str,
