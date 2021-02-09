@@ -31,8 +31,8 @@ def create_model(config, image_shape):
     # TODO: Look at documentation of pixelCNN
     dist = tfd.PixelCNN(
         image_shape=image_shape,
-        num_resnet=1,
-        num_hierarchies=2,
+        num_resnet=6,
+        num_hierarchies=4,
         num_filters=32,
         num_logistic_mix=5,
         dropout_p=0.3,
