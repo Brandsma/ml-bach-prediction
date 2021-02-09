@@ -86,7 +86,8 @@ def train(data, config, image_shape=(128, 128, 1)):
     # Create model
     model, dist = create_model(config, image_shape)
 
-    history = model.fit(
+    # history = model.fit
+    model.fit(
         data,
         epochs=config.epochs,
         verbose=True,
@@ -100,17 +101,17 @@ def train(data, config, image_shape=(128, 128, 1)):
     log.debug(model)
     log.info("Training done")
 
-    log.info("Plotting results...")
-    plt.figure()
-    epochs_range = range(config.epochs)
-    loss = history.history["loss"]
+    # log.info("Plotting results...")
+    # plt.figure()
+    # epochs_range = range(config.epochs)
+    # loss = history.history["loss"]
     # val_loss = history.history["val_loss"]
-    plt.plot(epochs_range, loss, label="training loss")
+    # plt.plot(epochs_range, loss, label="training loss")
     # plt.plot(epochs_range, val_loss, label="validation loss")
-    plt.xlabel("Epochs")
-    plt.legend(loc="lower right")
-    plt.title("Training and Validation Loss")
-    plt.show()
+    # plt.xlabel("Epochs")
+    # plt.legend(loc="lower right")
+    # plt.title("Training and Validation Loss")
+    # plt.show()
 
     return (model, dist)
 
@@ -143,8 +144,6 @@ def main(config):
         image_size=(128, 128),
     )
 
-    print(train_ds)
-    print(validation_ds)
     log.info("Loading images done")
 
     if config.training:
