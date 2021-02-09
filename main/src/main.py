@@ -52,7 +52,7 @@ def create_model(config, image_shape):
 
     # Compile and train the model
     # TODO: Understand
-    model.compile(optimizer=tfk.optimizers.Adamax(0.001), metrics=["accuracy"])
+    model.compile(optimizer=tfk.optimizers.Adamax(0.001), metrics=[])
 
     return (model, dist)
 
@@ -77,30 +77,20 @@ def get_callbacks():
 def train(data, config, image_shape=(128, 128, 1)):
     log.info("Starting training...")
 
-    # n_split = 3
-
-    # for train_index, test_index in KFold(n_split).split(X):
-    #     x_train, x_test = X[train_index], X[test_index]
-    #     y_train, y_test = Y[train_index], Y[test_index]
-
-    #     model, dist = create_model(config, image_shape)
-    #     model.fit(x_train, y_train, epochs=config.epochs)
-
-    #     log.debug("Model evaluation {}".format(model.evaluate(x_test, y_test)))
+    # Shuffle and repeat the data every epoch
+    # TODO: Shuffly should have length of dataset
+    # data = data.shuffle()
+    data = data.repeat(3)
 
     # Create model
     model, dist = create_model(config, image_shape)
 
-    log.info(data)
-
-    # TODO: Understand
     history = model.fit(
         data,
-        epochs=100,
-        verbose=True,  # callbacks=get_callbacks()
+        epochs=config.epochs,
+        verbose=True,
+        callbacks=get_callbacks(),
     )
-    # history = model.fit(data, epochs=config.epochs, validation_split=0.2,
-    #           verbose=True , callbacks=get_callbacks())
 
     # Save the model
     # model.save("{}/model/saved_model".format(config.output_dir))
@@ -129,27 +119,36 @@ def main(config):
     log.info("Starting...")
 
     log.info("Loading images...")
-    data = tf.keras.preprocessing.image_dataset_from_directory(
+
+    train_ds = tf.keras.preprocessing.image_dataset_from_directory(
         config.input_dir,
         seed=config.seed,
         color_mode="grayscale",
         batch_size=config.batch_size,
+        validation_split=0.2,
+        subset="training",
+        # TODO: Change to proper size
         image_size=(128, 128),
     )
-    # data = tf.keras.preprocessing.image_dataset_from_directory(
-    #     config.input_dir, seed=config.seed, color_mode="grayscale", batch_size=config.batch_size, image_size=(128, 128)
-    #     , validation_split=0.2, subset="validation")
-    log.debug(data)
+
+    validation_ds = tf.keras.preprocessing.image_dataset_from_directory(
+        config.input_dir,
+        seed=config.seed,
+        color_mode="grayscale",
+        batch_size=config.batch_size,
+        validation_split=0.2,
+        subset="validation",
+        # TODO: Change to proper size
+        image_size=(128, 128),
+    )
+
+    print(train_ds)
+    print(validation_ds)
     log.info("Loading images done")
 
-    # log.info("Preprocessing...")
-    # input_data = data.as_numpy_iterator()
-    # X_train, X_test, y_train, y_test = train_test_split(
-    #     input_data, test_size=0.25, random_state=0
-    # )
-
     if config.training:
-        model, dist = train(data, config)
+        model, dist = train(train_ds, config)
+        print(f"Model evaluation: {model.evaluate(validation_ds)}")
     else:
         log.info("Loading model...")
         # Load model
@@ -214,7 +213,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--seed",
         help="value: Set a seed for the determined randomness",
-        default=None,
+        default=42,
         type=int,
     )
     parser.add_argument(
