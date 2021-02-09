@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import tensorflow_probability as tfp
 from keras.callbacks import EarlyStopping, ModelCheckpoint
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold
 from tqdm import tqdm
 
 import logger
@@ -52,7 +52,7 @@ def create_model(config, image_shape):
 
     # Compile and train the model
     # TODO: Understand
-    model.compile(optimizer=tfk.optimizers.Adamax(0.001), metrics=[])
+    model.compile(optimizer=tfk.optimizers.Adamax(0.001), metrics=["accuracy"])
 
     return (model, dist)
 
@@ -77,12 +77,27 @@ def get_callbacks():
 def train(data, config, image_shape=(128, 128, 1)):
     log.info("Starting training...")
 
+    # n_split = 3
+
+    # for train_index, test_index in KFold(n_split).split(X):
+    #     x_train, x_test = X[train_index], X[test_index]
+    #     y_train, y_test = Y[train_index], Y[test_index]
+
+    #     model, dist = create_model(config, image_shape)
+    #     model.fit(x_train, y_train, epochs=config.epochs)
+
+    #     log.debug("Model evaluation {}".format(model.evaluate(x_test, y_test)))
+
     # Create model
     model, dist = create_model(config, image_shape)
 
+    log.info(data)
+
     # TODO: Understand
     history = model.fit(
-        data, epochs=config.epochs, verbose=True, callbacks=get_callbacks()
+        data,
+        epochs=100,
+        verbose=True,  # callbacks=get_callbacks()
     )
     # history = model.fit(data, epochs=config.epochs, validation_split=0.2,
     #           verbose=True , callbacks=get_callbacks())
@@ -129,8 +144,9 @@ def main(config):
 
     # log.info("Preprocessing...")
     # input_data = data.as_numpy_iterator()
-    # X_train, X_test, y_train, y_test = train_test_split(input_data, test_size=0.25,
-    #                                                     random_state=0)
+    # X_train, X_test, y_train, y_test = train_test_split(
+    #     input_data, test_size=0.25, random_state=0
+    # )
 
     if config.training:
         model, dist = train(data, config)
