@@ -52,6 +52,7 @@ def create_model(config, image_shape):
 
     # Compile and train the model
     # TODO: Understand
+    # Adam, Adamax and Nadam
     model.compile(optimizer=tfk.optimizers.Adamax(0.001), metrics=[])
 
     return (model, dist)
