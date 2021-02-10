@@ -13,6 +13,7 @@ log = logger.setup_logger(__name__)
 def create_dataset(config):
     log.info("Loading dataset...")
 
+    print(config.input_dir)
     train_ds = tf.keras.preprocessing.image_dataset_from_directory(
         config.input_dir,
         seed=config.seed,
@@ -42,8 +43,10 @@ def create_dataset(config):
 
 def run_model(train_ds, validation_ds, config):
     if config.training:
-        model, dist = train(train_ds, config)
-        print(f"Model evaluation: {model.evaluate(validation_ds)}")
+        model, dist = train(train_ds, validation_ds, config)
+        with open(f"./{config.name}-evaluation.txt", "w") as f:
+            log.info(f"Writing validation loss to ./{config.name}-evaluation.txt...")
+            f.write(f"loss:\n{model.evaluate(validation_ds)}")
     else:
         log.info("Loading model...")
         # Load model
@@ -56,12 +59,16 @@ def run_model(train_ds, validation_ds, config):
         # Load the params back into the model
         model.load_weights(latest).expect_partial()
 
+        with open("./evaluation.txt", "w") as f:
+            log.info("Writing validation loss to ./evaluation.txt...")
+            f.write(f"loss:\n{model.evaluate(validation_ds)}")
+
         log.info("Loading done")
 
     log.info("Predicting...")
 
-    prediction = predict(dist, config.output_number)
-    log.debug(prediction)
+    # prediction = predict(dist, config.output_number)
+    # log.debug(prediction)
 
     log.info("Prediction done...")
 
@@ -95,11 +102,11 @@ def main():
     log.info("Program will run with following parameters:")
     log.info(config)
 
-    train_ds, validation_ds = create_dataset(config)
+    ds, val_ds = create_dataset(config)
 
-    prediction = run_model(train_ds, validation_ds, config)
+    _ = run_model(ds, val_ds, config)
 
-    save_images(prediction, config)
+    # save_images(prediction, config)
 
     log.info("  Done  ")
 
@@ -152,10 +159,22 @@ def setup_argument_parser():
         default=10,
     )
     parser.add_argument(
+        "--kfold_splits",
+        help="Number of splits in the kfold cross-validation",
+        type=int,
+        default=3,
+    )
+    parser.add_argument(
         "--learning_rate",
         help="learning rate of the optimizer, range is 0-1",
         type=float,
-        default=0.001,
+        default=0.005,
+    )
+    parser.add_argument(
+        "--name",
+        help="Name of the program right now",
+        type=str,
+        default="default_name_for_file",
     )
     parser.add_argument(
         "--dropout_rate",
