@@ -14,7 +14,7 @@ def get_image_size(image_size_file):
     y_length = 0
     with open(image_size_file, "r") as f:
         content = f.readlines()
-        y_length = int(content[1]) - int(content[0])
+        y_length = int(content[1]) - int(content[0]) + 1
 
     return ((128, y_length, 1), (128, y_length))
 
