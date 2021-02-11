@@ -1,7 +1,7 @@
 import argparse
-import os
 
 import tensorflow as tf
+from tensorflow.keras import layers
 
 import logger
 from model import create_model, predict, train
@@ -10,10 +10,25 @@ from model import create_model, predict, train
 log = logger.setup_logger(__name__)
 
 
+def get_image_size(image_size_file):
+    y_length = 0
+    with open(image_size_file, "r") as f:
+        content = f.readlines()
+        y_length = int(content[1]) - int(content[0])
+
+    return ((128, y_length, 1), (128, y_length))
+
+
 def create_dataset(config):
     log.info("Loading dataset...")
 
-    print(config.input_dir)
+    if config.image_size_file is not None:
+        image_size, simplified_image_size = get_image_size(config.image_size_file)
+    else:
+        image_size, simplified_image_size = (128, 128, 1)
+
+    log.info(f"Input images have dimension {image_size}")
+
     train_ds = tf.keras.preprocessing.image_dataset_from_directory(
         config.input_dir,
         seed=config.seed,
@@ -22,7 +37,7 @@ def create_dataset(config):
         validation_split=0.2,
         subset="training",
         # TODO: Change to proper size
-        image_size=(128, 128),
+        image_size=simplified_image_size,
     )
 
     validation_ds = tf.keras.preprocessing.image_dataset_from_directory(
@@ -33,17 +48,25 @@ def create_dataset(config):
         validation_split=0.2,
         subset="validation",
         # TODO: Change to proper size
-        image_size=(128, 128),
+        image_size=simplified_image_size,
     )
+
+    # Normalize the data between 0 and 1
+    normalization_layer = tf.keras.layers.experimental.preprocessing.Rescaling(
+        1.0 / 255
+    )
+    train_ds = train_ds.map(lambda x, y: (normalization_layer(x), y))
+    validation_ds = validation_ds.map(lambda x, y: (normalization_layer(x), y))
 
     log.info("Loading dataset done")
 
-    return (train_ds, validation_ds)
+    return (train_ds, validation_ds, image_size)
 
 
-def run_model(train_ds, validation_ds, config):
+def run_model(train_ds, validation_ds, config, image_size=(128, 128, 1)):
+
     if config.training:
-        model, dist = train(train_ds, validation_ds, config)
+        model, dist = train(train_ds, validation_ds, config, image_shape=image_size)
         with open(f"./{config.name}-evaluation.txt", "w") as f:
             log.info(f"Writing validation loss to ./{config.name}-evaluation.txt...")
             f.write(f"loss:\n{model.evaluate(validation_ds)}")
@@ -51,10 +74,11 @@ def run_model(train_ds, validation_ds, config):
         log.info("Loading model...")
         # Load model
         latest = tf.train.latest_checkpoint(config.checkpoints)
+        log.info(latest)
 
         # Create a new model instance
         # TODO: Use proper image size
-        model, dist = create_model(config, (128, 128, 1))
+        model, dist = create_model(config, image_size)
 
         # Load the params back into the model
         model.load_weights(latest).expect_partial()
@@ -67,30 +91,9 @@ def run_model(train_ds, validation_ds, config):
 
     log.info("Predicting...")
 
-    # prediction = predict(dist, config.output_number)
-    # log.debug(prediction)
+    # predict(dist, config)
 
     log.info("Prediction done...")
-
-
-def save_images(prediction, config):
-    log.info("Saving images to disk...")
-    if not config.output_dir.endswith("/"):
-        config.output_dir += "/"
-    if not os.path.isdir(config.output_dir):
-        try:
-            os.makedirs(config.output_dir)
-        except:
-            pass
-
-    image_counter = 0
-    for image in prediction:
-        tf.keras.preprocessing.image.save_img(
-            config.output_dir + f"output_{image_counter}.png", image
-        )
-        image_counter += 1
-
-    log.info("Saving done")
 
 
 def main():
@@ -102,11 +105,9 @@ def main():
     log.info("Program will run with following parameters:")
     log.info(config)
 
-    ds, val_ds = create_dataset(config)
+    ds, val_ds, image_size = create_dataset(config)
 
-    _ = run_model(ds, val_ds, config)
-
-    # save_images(prediction, config)
+    # _ = run_model(ds, val_ds, config, image_size=image_size)
 
     log.info("  Done  ")
 
@@ -139,6 +140,11 @@ def setup_argument_parser():
     )
     parser.add_argument(
         "--checkpoints", help="Set the path to save checkpoints", default="."
+    )
+    parser.add_argument(
+        "--image_size_file",
+        help="Specification file for the highest and lowest note of the input images, default size is (128,128,1)",
+        default=None,
     )
     parser.add_argument(
         "--seed",

@@ -1,3 +1,5 @@
+import os
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import tensorflow as tf
@@ -112,8 +114,6 @@ def train(data, val_ds, config, image_shape=(128, 128, 1)):
     # Create model
     model, dist = create_model(config, image_shape)
 
-    print(len(data))
-
     # # history = model.fit
     history = model.fit(
         data,
@@ -146,9 +146,24 @@ def train(data, val_ds, config, image_shape=(128, 128, 1)):
     return (model, dist)
 
 
-def predict(model, num_of_samples=5):
+def save_image(image, image_counter, config):
+    log.info(f"Saving image {image_counter} to disk...")
+    if not config.output_dir.endswith("/"):
+        config.output_dir += "/"
+    if not os.path.isdir(config.output_dir):
+        try:
+            os.makedirs(config.output_dir)
+        except Exception as e:
+            log.warn(f"makedir exception: {e}")
+
+    tf.keras.preprocessing.image.save_img(
+        config.output_dir + f"output_{image_counter}.png", image
+    )
+
+    log.info("Saving done")
+
+
+def predict(model, config):
     # Return n randomly sampled elements
-    samples = []
-    for _ in tqdm(range(num_of_samples), desc="sample number "):
-        samples.append(model.sample())
-    return samples
+    for idx in tqdm(range(config.output_number), desc="sample number "):
+        save_image(model.sample(), idx, config)
