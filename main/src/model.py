@@ -72,7 +72,7 @@ def get_callbacks(config):
 
     # Early Stopping when loss stops improving
     early_stop = EarlyStopping(
-        monitor="loss", min_delta=0, patience=config.patience, verbose=1, mode="min"
+        monitor="val_loss", min_delta=0, patience=config.patience, verbose=1, mode="min"
     )
 
     reduce_lr = ReduceLROnPlateau(
@@ -84,32 +84,6 @@ def get_callbacks(config):
 
 def train(data, val_ds, config, image_shape=(128, 128, 1)):
     log.info("Starting training...")
-
-    # Shuffle and repeat the data every epoch
-    # TODO: Shuffly should have length of dataset
-    # data = data.shuffle()
-    # data = data.repeat(3)
-    # import pandas as pd
-    # from sklearn.model_selection import KFold
-
-    # kf = KFold(n_splits=config.kfold_splits, random_state=None)
-
-    # print(list(data))
-    # df = tfds.as_dataframe(data[0])
-
-    # print(df.head())
-
-    # for train_index, test_index in kf.split(list(data)):
-    #     data_train, data_test =
-    # folds = []
-    # fold_length = len(data) // config.kfold_splits
-    # print(config.kfold_splits)
-    # print(len(data))
-    # for idx in range(config.kfold_splits):
-    #     folds.append(list(data)[fold_length * idx :: fold_length * (idx + 1)])
-
-    # for fold in folds:
-    #     print(len(fold))
 
     # Create model
     model, dist = create_model(config, image_shape)

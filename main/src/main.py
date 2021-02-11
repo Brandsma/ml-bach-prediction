@@ -16,7 +16,8 @@ def get_image_size(image_size_file):
         content = f.readlines()
         y_length = int(content[1]) - int(content[0]) + 1
 
-    return ((128, y_length, 1), (128, y_length))
+    return ((128, 128, 1), (128, 128))
+    # return ((128, y_length, 1), (128, y_length))
 
 
 def create_dataset(config):
@@ -58,6 +59,10 @@ def create_dataset(config):
     train_ds = train_ds.map(lambda x, y: (normalization_layer(x), y))
     validation_ds = validation_ds.map(lambda x, y: (normalization_layer(x), y))
 
+    # Add a prefetch mechanic so producers and consumers can work at the same time
+    train_ds = train_ds.cache().prefetch(2)
+    validation_ds = validation_ds.cache().prefetch(2)
+
     log.info("Loading dataset done")
 
     return (train_ds, validation_ds, image_size)
@@ -91,7 +96,7 @@ def run_model(train_ds, validation_ds, config, image_size=(128, 128, 1)):
 
     log.info("Predicting...")
 
-    # predict(dist, config)
+    predict(dist, config)
 
     log.info("Prediction done...")
 
@@ -107,7 +112,7 @@ def main():
 
     ds, val_ds, image_size = create_dataset(config)
 
-    # _ = run_model(ds, val_ds, config, image_size=image_size)
+    _ = run_model(ds, val_ds, config, image_size=image_size)
 
     log.info("  Done  ")
 
