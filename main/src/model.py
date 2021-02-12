@@ -1,6 +1,7 @@
 import os
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import tensorflow as tf
 import tensorflow_datasets as tfds
@@ -85,10 +86,19 @@ def get_callbacks(config):
 def train(data, val_ds, config, image_shape=(128, 128, 1)):
     log.info("Starting training...")
 
-    # Create model
-    model, dist = create_model(config, image_shape)
+    if config.continue_from_checkpoint:
+        log.info("Retrieving checkpoint to continue training")
+        latest = tf.train.latest_checkpoint(config.checkpoints)
+        log.debug("latest checkpoint location: {}".format(latest))
 
-    # # history = model.fit
+        # Create a new model instance
+        model, dist = create_model(config, image_shape)
+
+        # Load the params back into the model
+        model.load_weights(latest).expect_partial()
+    else:
+        model, dist = create_model(config, image_shape)
+
     history = model.fit(
         data,
         epochs=config.epochs,
@@ -99,23 +109,9 @@ def train(data, val_ds, config, image_shape=(128, 128, 1)):
 
     log.info("Training done")
 
-    # TODO: Save the data raw as well, so we can transform it later
     log.info("Saving history of loss...")
     hist_df = pd.DataFrame.from_dict(history.history)
     hist_df.to_csv(f"./{config.name}-history.csv")
-
-    log.info("Plotting results...")
-    plt.figure()
-    epochs_range = range(config.epochs)
-    loss = history.history["loss"]
-    val_loss = history.history["val_loss"]
-    plt.plot(epochs_range, loss, label="training loss")
-    plt.plot(epochs_range, val_loss, label="validation loss")
-    plt.xlabel("Epochs")
-    plt.legend(loc="lower right")
-    plt.title("Training and Validation Loss")
-    # plt.show()
-    plt.savefig(f"./{config.name}-output.jpg")
 
     return (model, dist)
 

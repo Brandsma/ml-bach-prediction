@@ -16,8 +16,9 @@ def get_image_size(image_size_file):
         content = f.readlines()
         y_length = int(content[1]) - int(content[0]) + 1
 
-    return ((128, 128, 1), (128, 128))
-    # return ((128, y_length, 1), (128, y_length))
+    y_length += 2
+    # return ((128, 128, 1), (128, 128))
+    return ((128, y_length, 1), (128, y_length))
 
 
 def create_dataset(config):
@@ -26,7 +27,7 @@ def create_dataset(config):
     if config.image_size_file is not None:
         image_size, simplified_image_size = get_image_size(config.image_size_file)
     else:
-        image_size, simplified_image_size = (128, 128, 1)
+        image_size, simplified_image_size = ((128, 128, 1), (128, 128))
 
     log.info(f"Input images have dimension {image_size}")
 
@@ -35,8 +36,8 @@ def create_dataset(config):
         seed=config.seed,
         color_mode="grayscale",
         batch_size=config.batch_size,
-        validation_split=0.2,
-        subset="training",
+        # validation_split=0.2,
+        # subset="training",
         # TODO: Change to proper size
         image_size=simplified_image_size,
     )
@@ -68,13 +69,9 @@ def create_dataset(config):
     return (train_ds, validation_ds, image_size)
 
 
-def run_model(train_ds, validation_ds, config, image_size=(128, 128, 1)):
-
+def run_model(ds, val_ds, config, image_size=(128, 128, 1)):
     if config.training:
-        model, dist = train(train_ds, validation_ds, config, image_shape=image_size)
-        with open(f"./{config.name}-evaluation.txt", "w") as f:
-            log.info(f"Writing validation loss to ./{config.name}-evaluation.txt...")
-            f.write(f"loss:\n{model.evaluate(validation_ds)}")
+        model, dist = train(ds, val_ds, config, image_shape=image_size)
     else:
         log.info("Loading model...")
         # Load model
@@ -87,10 +84,6 @@ def run_model(train_ds, validation_ds, config, image_size=(128, 128, 1)):
 
         # Load the params back into the model
         model.load_weights(latest).expect_partial()
-
-        with open("./evaluation.txt", "w") as f:
-            log.info("Writing validation loss to ./evaluation.txt...")
-            f.write(f"loss:\n{model.evaluate(validation_ds)}")
 
         log.info("Loading done")
 
@@ -110,9 +103,9 @@ def main():
     log.info("Program will run with following parameters:")
     log.info(config)
 
-    ds, val_ds, image_size = create_dataset(config)
+    ds, val_ds, image_shape = create_dataset(config)
 
-    _ = run_model(ds, val_ds, config, image_size=image_size)
+    _ = run_model(ds, val_ds, config, image_size=image_shape)
 
     log.info("  Done  ")
 
@@ -133,6 +126,11 @@ def setup_argument_parser():
     )
     parser.add_argument(
         "--training", help="flag: Set to true when training", action="store_true"
+    )
+    parser.add_argument(
+        "--continue_from_checkpoint",
+        help="flag: Set to true when training",
+        action="store_true",
     )
     parser.add_argument(
         "--epochs", help="Set the number of epochs", default=10, type=int
