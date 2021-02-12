@@ -11,14 +11,14 @@ log = logger.setup_logger(__name__)
 
 
 def get_image_size(image_size_file):
-    y_length = 0
+    length = 0
     with open(image_size_file, "r") as f:
         content = f.readlines()
-        y_length = int(content[1]) - int(content[0]) + 1
+        length = int(content[1]) - int(content[0]) + 1
 
-    y_length += 2
+    # length += 2
     # return ((128, 128, 1), (128, 128))
-    return ((128, y_length, 1), (128, y_length))
+    return ((length, length, 1), (length, length))
 
 
 def create_dataset(config):
