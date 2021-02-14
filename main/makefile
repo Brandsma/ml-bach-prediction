@@ -4,7 +4,7 @@ data:
 	python ./data/input/midi2img/midi2img.py ./data/input/midi/ ./data/input/img/A/
 
 train:
-	python src/main.py --name "first_train" --image_size_file ./data/input/img/A/latestImageSettings.txt --epochs 400 --batch_size 16 --patience 5 --learning_rate 0.01 --dropout_rate 0.5 --optimizer adam --checkpoints ./src/checkpoints/ --training --output_number 1 ./data/input/img/ ./data/output/img/
+	python src/main.py --name "first_train" --image_size_file ./data/input/img/A/latestImageSettings.txt --epochs 200 --batch_size 16 --patience 10 --learning_rate 0.0005 --dropout_rate 0.5 --optimizer adamax --checkpoints ./src/checkpoints/ --training --output_number 1 ./data/input/img/ ./data/output/img/
 
 test:
 	python src/main.py --name "first_train" --checkpoints ./src/checkpoints/ --log_level INFO --output_number 2 ./data/input/img/ ./data/output/img/

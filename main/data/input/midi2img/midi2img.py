@@ -72,9 +72,11 @@ def midi2image(midi_path, output_path, lowest, highest, binary=False):
 
         for part_name, values in data.items():
             # https://en.wikipedia.org/wiki/Scientific_pitch_notation#Similar_systems
-            upperBoundNote = highest + 1  # height of image
-            lowerBoundNote = lowest
-            maxSongLength = highest - lowest + 1  # length of image
+            # upperBoundNote = highest + 1  # height of image
+            # lowerBoundNote = lowest
+            upperBoundNote = 128
+            lowerBoundNote = 0
+            maxSongLength = 128  # length of image
 
             # list of entries in part (each of which will contrain matrices)
             binary_matrix_list[part_name] = []

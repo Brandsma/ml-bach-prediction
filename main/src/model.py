@@ -1,13 +1,9 @@
 import os
 
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import tensorflow as tf
-import tensorflow_datasets as tfds
 import tensorflow_probability as tfp
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
-from sklearn.model_selection import KFold
 from tqdm import tqdm
 
 from logger import setup_logger

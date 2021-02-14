@@ -16,7 +16,7 @@ def get_image_size(image_size_file):
         content = f.readlines()
         length = int(content[1]) - int(content[0]) + 1
 
-    # length += 2
+    length += 2
     # return ((128, 128, 1), (128, 128))
     return ((length, length, 1), (length, length))
 
@@ -36,9 +36,8 @@ def create_dataset(config):
         seed=config.seed,
         color_mode="grayscale",
         batch_size=config.batch_size,
-        # validation_split=0.2,
-        # subset="training",
-        # TODO: Change to proper size
+        validation_split=0.2,
+        subset="training",
         image_size=simplified_image_size,
     )
 
@@ -49,7 +48,6 @@ def create_dataset(config):
         batch_size=config.batch_size,
         validation_split=0.2,
         subset="validation",
-        # TODO: Change to proper size
         image_size=simplified_image_size,
     )
 
