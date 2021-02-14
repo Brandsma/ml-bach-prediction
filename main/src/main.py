@@ -36,9 +36,8 @@ def create_dataset(config):
         seed=config.seed,
         color_mode="grayscale",
         batch_size=config.batch_size,
-        # validation_split=0.2,
-        # subset="training",
-        # TODO: Change to proper size
+        validation_split=0.2,
+        subset="training",
         image_size=simplified_image_size,
     )
 
@@ -49,7 +48,6 @@ def create_dataset(config):
         batch_size=config.batch_size,
         validation_split=0.2,
         subset="validation",
-        # TODO: Change to proper size
         image_size=simplified_image_size,
     )
 
