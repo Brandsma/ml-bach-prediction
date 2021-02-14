@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensorflow.keras import layers
 
 import logger
-from model import create_model, predict, train
+from model import create_conditional_model, create_model, predict, train
 
 # Setup global logger
 log = logger.setup_logger(__name__)
@@ -19,6 +19,10 @@ def get_image_size(image_size_file):
     length += 2
     # return ((128, 128, 1), (128, 128))
     return ((length, length, 1), (length, length))
+
+
+def concatenate_labels(x, y):
+    return ((x, y), y)
 
 
 def create_dataset(config):
@@ -51,12 +55,20 @@ def create_dataset(config):
         image_size=simplified_image_size,
     )
 
+    if config.class_conditional:
+        log.info(f"Class names: {train_ds.class_names}")
+
     # Normalize the data between 0 and 1
     normalization_layer = tf.keras.layers.experimental.preprocessing.Rescaling(
         1.0 / 255
     )
     train_ds = train_ds.map(lambda x, y: (normalization_layer(x), y))
     validation_ds = validation_ds.map(lambda x, y: (normalization_layer(x), y))
+
+    if config.class_conditional:
+        # Concatenate the labels into one tensor
+        train_ds = train_ds.map(concatenate_labels)
+        validation_ds = validation_ds.map(concatenate_labels)
 
     # Add a prefetch mechanic so producers and consumers can work at the same time
     train_ds = train_ds.cache().prefetch(2)
@@ -65,31 +77,6 @@ def create_dataset(config):
     log.info("Loading dataset done")
 
     return (train_ds, validation_ds, image_size)
-
-
-def run_model(ds, val_ds, config, image_size=(128, 128, 1)):
-    if config.training:
-        model, dist = train(ds, val_ds, config, image_shape=image_size)
-    else:
-        log.info("Loading model...")
-        # Load model
-        latest = tf.train.latest_checkpoint(config.checkpoints)
-        log.info(latest)
-
-        # Create a new model instance
-        # TODO: Use proper image size
-        model, dist = create_model(config, image_size)
-
-        # Load the params back into the model
-        model.load_weights(latest).expect_partial()
-
-        log.info("Loading done")
-
-    log.info("Predicting...")
-
-    predict(dist, config)
-
-    log.info("Prediction done...")
 
 
 def main():
@@ -108,6 +95,33 @@ def main():
     log.info("  Done  ")
 
 
+def run_model(ds, val_ds, config, image_size=(128, 128, 1)):
+    if config.training:
+        model, dist = train(ds, val_ds, config, image_shape=image_size)
+    else:
+        log.info("Loading model...")
+        # Load model
+        latest = tf.train.latest_checkpoint(config.checkpoints)
+        log.info(latest)
+
+        # Create a new model instance
+        if config.class_conditional:
+            model, dist = create_conditional_model(config, image_size)
+        else:
+            model, dist = create_model(config, image_size)
+
+        # Load the params back into the model
+        model.load_weights(latest).expect_partial()
+
+        log.info("Loading done")
+
+    log.info("Predicting...")
+
+    predict(dist, config)
+
+    log.info("Prediction done...")
+
+
 def setup_argument_parser():
     parser = argparse.ArgumentParser()
 
@@ -121,6 +135,11 @@ def setup_argument_parser():
         help="Depends on how many images should be sampled from the resulting model distribution",
         default=2,
         type=int,
+    )
+    parser.add_argument(
+        "--class_conditional",
+        help="flag: Whether to use the class conditional model or not",
+        action="store_true",
     )
     parser.add_argument(
         "--training", help="flag: Set to true when training", action="store_true"

@@ -24,6 +24,42 @@ def get_optimizer(name, learning_rate):
     return optimizers[name]
 
 
+def create_conditional_model(config, image_shape, label_shape=()):
+    # Create the model
+    tfd = tfp.distributions
+    tfk = tf.keras
+    tfkl = tf.keras.layers
+
+    # Define a Pixel CNN network
+    dist = tfd.PixelCNN(
+        image_shape=image_shape,
+        conditional_shape=label_shape,
+        num_resnet=1,
+        num_hierarchies=3,
+        num_filters=32,
+        num_logistic_mix=5,
+        dropout_p=config.dropout_rate,
+    )
+
+    # Define the model input
+    image_input = tfkl.Input(shape=image_shape)
+    label_input = tfkl.Input(shape=label_shape)
+
+    # Define the log likelihood for the loss fn
+    log_prob = dist.log_prob(image_input, conditional_input=label_input)
+
+    # Define the model
+    model = tfk.Model(inputs=[image_input, label_input], outputs=log_prob)
+    model.add_loss(-tf.reduce_mean(log_prob))
+
+    # Compile and train the model
+    current_optimizer = get_optimizer(config.optimizer, config.learning_rate)
+
+    model.compile(optimizer=current_optimizer, metrics=[])
+
+    return (model, dist)
+
+
 def create_model(config, image_shape):
     # Create the model
     tfd = tfp.distributions
@@ -88,12 +124,18 @@ def train(data, val_ds, config, image_shape=(128, 128, 1)):
         log.debug("latest checkpoint location: {}".format(latest))
 
         # Create a new model instance
-        model, dist = create_model(config, image_shape)
+        if config.class_conditional:
+            model, dist = create_conditional_model(config, image_shape)
+        else:
+            model, dist = create_model(config, image_shape)
 
         # Load the params back into the model
         model.load_weights(latest).expect_partial()
     else:
-        model, dist = create_model(config, image_shape)
+        if config.class_conditional:
+            model, dist = create_conditional_model(config, image_shape)
+        else:
+            model, dist = create_model(config, image_shape)
 
     history = model.fit(
         data,
@@ -131,5 +173,10 @@ def save_image(image, image_counter, config):
 
 def predict(model, config):
     # Return n randomly sampled elements
-    for idx in tqdm(range(config.output_number), desc="sample number "):
-        save_image(model.sample(), idx, config)
+    if config.class_conditional:
+        for idx in tqdm(range(config.output_number), desc="sample number AB "):
+            save_image(model.sample(conditional_input=0.0), "A_" + idx, config)
+            save_image(model.sample(conditional_input=1.0), "B_" + idx, config)
+    else:
+        for idx in tqdm(range(config.output_number), desc="sample number "):
+            save_image(model.sample(), idx, config)
