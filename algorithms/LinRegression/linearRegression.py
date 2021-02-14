@@ -26,7 +26,7 @@ for t in range(predict_steps):
     predictions.append(int(y))
     history = np.append(history, y)
 
-print(predictions)
-
-np.savetxt("predicted_score.txt", predictions, delimiter = '\n', fmt = '%i')
+predictionsFull = np.zeros(shape = (len(predictions), 4))
+predictionsFull[:, voice] = predictions
+np.savetxt("predicted_score.txt", predictionsFull, delimiter = ' ', fmt = '%i')
 
