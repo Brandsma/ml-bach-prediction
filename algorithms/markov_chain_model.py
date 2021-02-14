@@ -80,6 +80,7 @@ class MarkovChainList(PredictionModel):
 
     def generate_markov_chain_for_one_voice(self, X, voice=3):
         selected_voice = X[:, voice]
+        # todo : midi file /binary array innemen
 
         # Retrieve all the states where we can go to
         states = np.unique(selected_voice)

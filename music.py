@@ -7,7 +7,7 @@
 import numpy as np
 from music21 import *
 
-environment.set("midiPath", "/usr/bin/musescore")
+#environment.set("midiPath", "/usr/bin/musescore")
 
 
 # The circle of fifths will be a central theme, and its encoding will be predefined:
