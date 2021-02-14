@@ -175,8 +175,8 @@ def predict(model, config):
     # Return n randomly sampled elements
     if config.class_conditional:
         for idx in tqdm(range(config.output_number), desc="sample number AB "):
-            save_image(model.sample(conditional_input=0.0), "A_" + idx, config)
-            save_image(model.sample(conditional_input=1.0), "B_" + idx, config)
+            save_image(model.sample(conditional_input=0.0), "A_" + str(idx), config)
+            save_image(model.sample(conditional_input=1.0), "B_" + str(idx), config)
     else:
         for idx in tqdm(range(config.output_number), desc="sample number "):
             save_image(model.sample(), idx, config)
