@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 from music21 import chord, instrument, note, stream
 from PIL import Image
@@ -37,6 +38,7 @@ def image2midi(image_path):
 
     """ convert the output from the prediction to notes and create a midi file
         from the notes """
+
     offset = 0
     output_notes = []
 
@@ -45,12 +47,14 @@ def image2midi(image_path):
     prev_notes = updateNotes(im_arr.T[0, :], {})
     for column in im_arr.T[1:, :]:
         notes = column2notes(column)
+        # print(notes)
         # pattern is a chord
         notes_in_chord = notes
         old_notes = prev_notes.keys()
         for old_note in old_notes:
             if not old_note in notes_in_chord:
-                new_note = note.Note(old_note, quarterLength=prev_notes[old_note])
+                new_note = note.Note(
+                    old_note, quarterLength=prev_notes[old_note])
                 new_note.storedInstrument = instrument.Piano()
                 if offset - prev_notes[old_note] >= 0:
                     new_note.offset = offset - prev_notes[old_note]
@@ -77,10 +81,9 @@ def image2midi(image_path):
 
     midi_stream = stream.Stream(output_notes)
 
-    midi_stream.write("midi", fp=image_path.split("/")[-1].replace(".png", ".mid"))
+    midi_stream.write("midi", fp=image_path.split("/")
+                      [-1].replace(".png", ".mid"))
 
-
-import sys
 
 image_path = sys.argv[1]
 image2midi(image_path)
